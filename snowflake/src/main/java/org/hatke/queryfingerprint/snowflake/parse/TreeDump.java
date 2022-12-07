@@ -330,7 +330,6 @@ import gudusoft.gsqlparser.stmt.hana.TBackupDataStmt;
 import gudusoft.gsqlparser.stmt.hana.TBackupListDataStmt;
 import gudusoft.gsqlparser.stmt.hana.TCreateCertificateStmt;
 import gudusoft.gsqlparser.stmt.hana.TCreateCollectionStmt;
-import gudusoft.gsqlparser.stmt.hana.TCreateCredentialStmt;
 import gudusoft.gsqlparser.stmt.hana.TCreateFulltextIndexStmt;
 import gudusoft.gsqlparser.stmt.hana.TCreateGraphWorkspaceStmt;
 import gudusoft.gsqlparser.stmt.hana.TCreateJWTProviderStmt;
@@ -411,7 +410,6 @@ import gudusoft.gsqlparser.stmt.mssql.TDenyStmt;
 import gudusoft.gsqlparser.stmt.mssql.TMssqlBeginConversationTimer;
 import gudusoft.gsqlparser.stmt.mssql.TMssqlBeginDialog;
 import gudusoft.gsqlparser.stmt.mssql.TMssqlBlock;
-import gudusoft.gsqlparser.stmt.mssql.TMssqlBreak;
 import gudusoft.gsqlparser.stmt.mssql.TMssqlBulkInsert;
 import gudusoft.gsqlparser.stmt.mssql.TMssqlClose;
 import gudusoft.gsqlparser.stmt.mssql.TMssqlCommit;
@@ -501,7 +499,6 @@ import gudusoft.gsqlparser.stmt.oracle.TPlsqlVarrayTypeDefStmt;
 import gudusoft.gsqlparser.stmt.oracle.TSqlplusCmdStatement;
 import gudusoft.gsqlparser.stmt.postgresql.TDropRoleSqlStatement;
 import gudusoft.gsqlparser.stmt.postgresql.TForEachStmt;
-import gudusoft.gsqlparser.stmt.postgresql.TGetDiagStmt;
 import gudusoft.gsqlparser.stmt.postgresql.TMoveStmt;
 import gudusoft.gsqlparser.stmt.postgresql.TNullStmt;
 import gudusoft.gsqlparser.stmt.postgresql.TPerformanceStmt;
@@ -547,7 +544,6 @@ import gudusoft.gsqlparser.stmt.snowflake.TAlterResourceMonitorStmt;
 import gudusoft.gsqlparser.stmt.snowflake.TAlterShareStmt;
 import gudusoft.gsqlparser.stmt.snowflake.TAlterStageStmt;
 import gudusoft.gsqlparser.stmt.snowflake.TAlterWarehouseStmt;
-import gudusoft.gsqlparser.stmt.snowflake.TCopyIntoStmt;
 import gudusoft.gsqlparser.stmt.snowflake.TCreateFileFormatStmt;
 import gudusoft.gsqlparser.stmt.snowflake.TCreateNetworkPolicyStmt;
 import gudusoft.gsqlparser.stmt.snowflake.TCreatePipeStmt;
@@ -1382,14 +1378,6 @@ public class TreeDump extends TParseTreeVisitor {
         endNode(node);
     }
 
-    public void preVisit(TCreateCredentialStmt node) {
-        addNode(node);
-    }
-
-    public void postVisit(TCreateCredentialStmt node) {
-        endNode(node);
-    }
-
     public void preVisit(TCreateCollectionStmt node) {
         addNode(node);
     }
@@ -1699,14 +1687,6 @@ public class TreeDump extends TParseTreeVisitor {
     }
 
     public void postVisit(TCreateFileFormatStmt node) {
-        endNode(node);
-    }
-
-    public void preVisit(TCopyIntoStmt node) {
-        addNode(node);
-    }
-
-    public void postVisit(TCopyIntoStmt node) {
         endNode(node);
     }
 
@@ -4328,14 +4308,6 @@ public class TreeDump extends TParseTreeVisitor {
         endNode(node);
     }
 
-    public void preVisit(TGetDiagStmt node) {
-        addNode(node);
-    }
-
-    public void postVisit(TGetDiagStmt node) {
-        endNode(node);
-    }
-
     public void preVisit(TForEachStmt node) {
         addNode(node);
     }
@@ -5493,14 +5465,6 @@ public class TreeDump extends TParseTreeVisitor {
     }
 
     public void postVisit(TMssqlContinue stmt) {
-        endNode(stmt);
-    }
-
-    public void preVisit(TMssqlBreak stmt) {
-        addNode(stmt);
-    }
-
-    public void postVisit(TMssqlBreak stmt) {
         endNode(stmt);
     }
 
