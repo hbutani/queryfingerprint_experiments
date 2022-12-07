@@ -1,19 +1,34 @@
 package org.hatke.queryfingerprint.snowflake.parse;
 
+
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import gudusoft.gsqlparser.EExpressionType;
 import gudusoft.gsqlparser.nodes.TCTE;
+import gudusoft.gsqlparser.nodes.TExpression;
 import gudusoft.gsqlparser.nodes.TObjectName;
 import gudusoft.gsqlparser.nodes.TTable;
 import gudusoft.gsqlparser.nodes.TTableList;
 import gudusoft.gsqlparser.sqlenv.ESQLDataObjectType;
 import gudusoft.gsqlparser.sqlenv.TSQLEnv;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
+import org.hatke.queryfingerprint.snowflake.parse.features.ExprFeature;
+import org.hatke.queryfingerprint.snowflake.parse.features.ExprKind;
 import org.hatke.utils.Pair;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
-class SingleQB implements Source, QB {
+class SingleQB implements QB {
 
     private final QueryAnalysis qA;
 
@@ -42,14 +57,7 @@ class SingleQB implements Source, QB {
     private ImmutableList<Column> columns;
     private ImmutableMap<String, Column> columnsMap;
 
-    private ImmutableList<Column> projectedColumns;
-    private ImmutableList<FunctionApplication> functionApplications;
-
-    private ImmutableList<Column> filteredColumns;
-    private ImmutableList<Predicate> columnFilters;
-
-    private ImmutableList<Join> joins;
-
+    private final Features blockFeatures = new Features();
 
     SingleQB(QueryAnalysis qA, boolean isTopLevel, QBType qbType, TSelectSqlStatement pTree,
               Optional<QB> parentQB, Optional<SQLClauseType> parentClause) {
@@ -160,18 +168,39 @@ class SingleQB implements Source, QB {
     }
 
     /**
-     * provide mapping from a table(name, fqn) and subquery(alias, fqAlias) to the Source object.
-     */
-    ImmutableMap<String, Source> sourceAliasMap;
-
-    /**
      * across all input Sources mapping from col(name, fqn) to Column, provided it is unambiguous.
      */
     ImmutableMap<String, Column> unambiguousSourceColMap;
 
     private void setupInputResolution() {
-        // TODO
-        // setup sourceAliasMap, unambiguousSourceColMap
+
+        Map<String, Column> sourceColumnMap = new HashMap<>();
+        Set<String> ambiguousColNames = new HashSet<>();
+
+        BiFunction<Column, Function<Column, String>, Void> addCol = (col, fn) -> {
+
+            String nm = fn.apply(col);
+            if (!ambiguousColNames.contains(nm)) {
+                Column eCol = sourceColumnMap.remove(nm);
+                if (eCol != null) {
+                    ambiguousColNames.add(nm);
+                } else {
+                    sourceColumnMap.put(nm, col);
+                }
+            }
+            return null;
+        };
+
+
+        for(Source s : fromSources) {
+            for(Column c : s.columns()) {
+                addCol.apply(c, Column::getName);
+                addCol.apply(c, Column::getFQN);
+            }
+        }
+
+        unambiguousSourceColMap = ImmutableMap.copyOf(sourceColumnMap);
+
     }
 
     public Optional<ColumnRef> resolveInputColumn(TObjectName objName) {
@@ -190,12 +219,62 @@ class SingleQB implements Source, QB {
         return Optional.ofNullable(c);
     }
 
+    ImmutableMap<String, Column> getUnambiguousSourceColMap() {
+        return unambiguousSourceColMap;
+    }
+
+    private void addWhereExpr(ExprFeature eInfo,
+                              boolean isConjunct) {
+
+        if (eInfo.hasColumnRef()) {
+            blockFeatures.filteredColumns.add(eInfo.colRef.get().getColumn());
+        }
+
+        if (eInfo.hasFunctionCall()) {
+            blockFeatures.functionApplications.add(eInfo.getFuncCall());
+        }
+
+        if (eInfo.isPredicate()) {
+            if (isConjunct) {
+                blockFeatures.prunablePredicates.add(eInfo);
+            } else {
+                blockFeatures.otherPredicates.add(eInfo);
+            }
+        }
+    }
 
     private void analyzeWhereClause() {
-        // TODO
-        // for each conjunct run the ExpressionAnalyzer
-        // add to extracted predicates and joins of this QB
-        // add to functionApplications
+
+        if (selectStat.getWhereClause() == null || selectStat.getWhereClause().getCondition() == null) {
+            return;
+        }
+
+        TExpression whereCond = selectStat.getWhereClause().getCondition();
+        ArrayList conjuncts = null;
+        if (whereCond.getExpressionType() == EExpressionType.logical_and_t) {
+            conjuncts = whereCond.getFlattedAndOrExprs();
+        } else {
+            conjuncts = new ArrayList(Arrays.asList(whereCond));
+        }
+
+        for(Object o : conjuncts) {
+            TExpression expr = (TExpression) o;
+
+            if (expr.getExpressionType() == EExpressionType.parenthesis_t) {
+                expr = expr.getLeftOperand();
+            }
+
+            ExpressionAnalyzer eA =
+                    new ExpressionAnalyzer(this, expr);
+            Pair<ExprKind, ImmutableList<ExprFeature>> exprInfos =
+                    eA.analyze();
+            if (exprInfos.left != ExprKind.composite) {
+                addWhereExpr(exprInfos.right.get(0), true);
+            } else {
+                exprInfos.right.forEach(eI -> addWhereExpr(eI, false));
+            }
+        }
+
     }
 
     private void analyzeGroupByClause() {
@@ -251,23 +330,55 @@ class SingleQB implements Source, QB {
         return columnsMap;
     }
 
-    public ImmutableList<Column> getProjectedColumns() {
-        return projectedColumns;
+    public ImmutableSet<Column> getScannedColumns() {
+        ImmutableList.Builder<Column> b = new ImmutableList.Builder<>();
+        b.addAll(blockFeatures.projectedColumns.build());
+        b.addAll(blockFeatures.filteredColumns.build());
+        return b.build().stream().collect(ImmutableSet.toImmutableSet());
     }
 
-    public ImmutableList<FunctionApplication> getFunctionApplications() {
-        return functionApplications;
+    public ImmutableSet<Column> getFilteredColumns() {
+        return blockFeatures.filteredColumns.build().stream().collect(ImmutableSet.toImmutableSet());
     }
 
-    public ImmutableList<Column> getFilteredColumns() {
-        return filteredColumns;
+    public ImmutableList<ExprFeature> prunablePredicates() {
+        return blockFeatures.prunablePredicates.build();
     }
 
-    public ImmutableList<Predicate> getColumnFilters() {
-        return columnFilters;
+    public ImmutableList<ExprFeature> otherPredicates() {
+        return blockFeatures.otherPredicates.build();
     }
 
-    public ImmutableList<Join> getJoins() {
-        return joins;
+    public ImmutableList<ExprFeature> functionApplications() {
+        return blockFeatures.functionApplications.build();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SingleQB singleQB = (SingleQB) o;
+        return getId() == singleQB.getId();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(getId());
+    }
+
+    class Features {
+        private ImmutableList.Builder<Column> projectedColumns = new ImmutableList.Builder<>();
+        private ImmutableList.Builder<ExprFeature> functionApplications = new ImmutableList.Builder<>();
+
+        private ImmutableList.Builder<Column> filteredColumns = new ImmutableList.Builder<>();
+
+        /**
+         * execution plan for this predicate can be potentially influenced by the physical layout of the table.
+         */
+        private ImmutableList.Builder<ExprFeature> prunablePredicates = new ImmutableList.Builder<>();
+
+        private ImmutableList.Builder<ExprFeature> otherPredicates = new ImmutableList.Builder<>();
+
+        private ImmutableList.Builder<ExprFeature> joins = new ImmutableList.Builder<>();
     }
 }

@@ -32,6 +32,12 @@ dependencies {
 
     // based on https://stackoverflow.com/questions/54166069/how-do-you-add-local-jar-file-dependency-to-build-gradle-kt-file
     implementation(files("$projectDir/../lib/gudusoft.gsqlparser-2.5.0.8.jar"))
+
+    api("org.apache.logging.log4j:log4j-api:2.13.3")
+    api("org.apache.logging.log4j:log4j-core:2.13.3")
+    api("org.apache.logging.log4j:log4j-slf4j-impl:2.13.3")
+    api("org.slf4j:slf4j-api:1.7.25")
+    api("org.slf4j:slf4j-log4j12:1.7.25")
 }
 
 tasks.named<Test>("test") {

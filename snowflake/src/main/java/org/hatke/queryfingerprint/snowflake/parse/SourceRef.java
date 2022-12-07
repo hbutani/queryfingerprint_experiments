@@ -1,5 +1,6 @@
 package org.hatke.queryfingerprint.snowflake.parse;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import gudusoft.gsqlparser.nodes.TObjectName;
@@ -102,5 +103,18 @@ class SourceRef implements Source {
 
     public Source getInSource() {
         return inSource;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SourceRef sourceRef = (SourceRef) o;
+        return getId() == sourceRef.getId();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(getId());
     }
 }

@@ -1,5 +1,6 @@
 package org.hatke.queryfingerprint.snowflake.parse;
 
+import com.google.common.base.Objects;
 import gudusoft.gsqlparser.nodes.TObjectName;
 import gudusoft.gsqlparser.nodes.TTable;
 import gudusoft.gsqlparser.sqlenv.TSQLEnv;
@@ -50,5 +51,18 @@ public class CatalogColumn implements Column {
     @Override
     public Source getSource() {
         return table;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CatalogColumn that = (CatalogColumn) o;
+        return getId() == that.getId();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(getId());
     }
 }

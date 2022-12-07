@@ -1,5 +1,6 @@
 package org.hatke.queryfingerprint.snowflake.parse;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import gudusoft.gsqlparser.nodes.TObjectName;
@@ -91,5 +92,16 @@ class CatalogTable implements Source {
         return columns;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CatalogTable that = (CatalogTable) o;
+        return getId() == that.getId();
+    }
 
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(getId());
+    }
 }

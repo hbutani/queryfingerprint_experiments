@@ -1,5 +1,6 @@
 package org.hatke.queryfingerprint.snowflake.parse;
 
+import com.google.common.base.Objects;
 import gudusoft.gsqlparser.util.SQLUtil;
 
 import java.util.List;
@@ -49,5 +50,18 @@ public class SourceRefColumn implements Column {
 
     public Column getSourceColumn() {
         return sourceColumn;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SourceRefColumn that = (SourceRefColumn) o;
+        return Objects.equal(srcRef, that.srcRef) && Objects.equal(getSourceColumn(), that.getSourceColumn());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(srcRef, getSourceColumn());
     }
 }

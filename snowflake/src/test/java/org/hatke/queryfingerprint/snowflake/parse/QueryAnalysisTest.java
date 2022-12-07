@@ -65,9 +65,31 @@ public class QueryAnalysisTest {
 
         // show no errors 1, 3
 
-        QueryAnalysis tpcdsQA = new QueryAnalysis(sqlEnv, TPCDSQueries.q10);
+        QueryAnalysis tpcdsQA = new QueryAnalysis(sqlEnv, TPCDSQueries.q1);
         Show.show(tpcdsQA, System.out);
+//
+//        showExpressionTrees(tpcdsQA.getTopLevelQB().getSelectStat());
 
-        showExpressionTrees(tpcdsQA.getTopLevelQB().getSelectStat());
+        // exprAnalysis();
+
+        // exprFuncApply();
+    }
+
+    private static void exprAnalysis() {
+        String expr_q1 = "select * from date_dim" +
+                " where (d_year =2001) and " +
+                "(2 < d_month_seq or d_week_seq = ?)";
+
+        QueryAnalysis tpcdsQA = new QueryAnalysis(sqlEnv, expr_q1);
+        Show.show(tpcdsQA, System.out);
+    }
+
+    private static void exprFuncApply() {
+        String expr_q1 = "select * from date_dim" +
+                " where (year(d_date) != 2005) and (2 < d_month_seq) and (d_year =2001) and " +
+                "(2 > d_month_seq or d_week_seq = ?)";
+
+        QueryAnalysis tpcdsQA = new QueryAnalysis(sqlEnv, expr_q1);
+        Show.show(tpcdsQA, System.out);
     }
 }

@@ -1,10 +1,7 @@
 package org.hatke.queryfingerprint.snowflake.parse;
 
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import gudusoft.gsqlparser.EDbVendor;
-import gudusoft.gsqlparser.dlineage.dataflow.model.ModelBindingManager;
-import gudusoft.gsqlparser.dlineage.dataflow.sqlenv.model.SQLEnv;
 import gudusoft.gsqlparser.nodes.TObjectName;
 import gudusoft.gsqlparser.nodes.TResultColumn;
 import gudusoft.gsqlparser.nodes.TTable;
@@ -13,9 +10,10 @@ import gudusoft.gsqlparser.sqlenv.TSQLEnv;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
 import gudusoft.gsqlparser.util.SQLUtil;
 import org.hatke.utils.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -229,5 +227,9 @@ public class Utils {
         } else {
             return table.getName();
         }
+    }
+
+    public static Logger getLogger() {
+        return LoggerFactory.getLogger(QueryAnalysis.class.getName());
     }
 }

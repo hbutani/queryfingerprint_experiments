@@ -27,6 +27,7 @@ public interface Column extends ColumnRef {
     default boolean isCorrelated() {
         return false;
     }
+    
 
     class CorrelateColRef implements ColumnRef {
         private final Column parentCol;

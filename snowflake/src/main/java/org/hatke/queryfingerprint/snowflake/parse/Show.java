@@ -126,13 +126,35 @@ public class Show {
         show(out,
                 ImmutableList.<SingleQB>copyOf(collect.qbs),
                 ImmutableList.of("id", "isTopLevel", "qb_type", "parent_qb", "parent_clause",
-                        "from", "columns"),
+                        "from", "input_columns",
+                        "scanned_columns", "filtered_columns",
+                        "prunable_predicates", "other_predicates",
+                        "function_applications",
+                        "columns"),
                 qb -> Integer.toString(qb.getId()),
                 qb -> Boolean.toString(qb.isTopLevel()),
                 qb -> qb.getQbType().name(),
                 qb -> qb.getParentQB().map(qb1 -> Integer.toString(qb1.getId())).orElseGet(() -> ""),
                 qb -> qb.getParentClause().map(cl -> cl.name()).orElseGet(() -> ""),
                 qb -> qb.getFromSources().stream().map(s -> Integer.toString(s.getId())).
+                        collect(Collectors.joining(", ", "[", "]")),
+                qb -> qb.getUnambiguousSourceColMap().values().stream().
+                        map(c -> Integer.toString(c.getId())).collect(Collectors.toSet()).stream().
+                        collect(Collectors.joining(", ", "[", "]")),
+                qb -> qb.getScannedColumns().stream().
+                        map(c -> Integer.toString(c.getId())).
+                        collect(Collectors.joining(", ", "[", "]")),
+                qb -> qb.getFilteredColumns().stream().
+                        map(c -> Integer.toString(c.getId())).
+                        collect(Collectors.joining(", ", "[", "]")),
+                qb -> qb.prunablePredicates().stream().
+                        map(eF -> eF.toString()).
+                        collect(Collectors.joining(", ", "[", "]")),
+                qb -> qb.otherPredicates().stream().
+                        map(eF -> eF.toString()).
+                        collect(Collectors.joining(", ", "[", "]")),
+                qb -> qb.functionApplications().stream().
+                        map(eF -> eF.toString()).
                         collect(Collectors.joining(", ", "[", "]")),
                 qb -> qb.getColumns().stream().map(c -> c.getName() + "(" + c.getId() + ")").
                         collect(Collectors.joining(", ", "[", "]"))

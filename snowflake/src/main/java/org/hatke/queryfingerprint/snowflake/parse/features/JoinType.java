@@ -1,4 +1,4 @@
-package org.hatke.queryfingerprint.snowflake.parse;
+package org.hatke.queryfingerprint.snowflake.parse.features;
 
 public enum JoinType {
 
