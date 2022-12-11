@@ -72,8 +72,8 @@ public class ExpressionAnalyzer implements IExpressionVisitor {
 
         ImmutableList<ExprFeature> features = exprInfos.build();
 
-        if (features.size() == 1 && features.get(0).expr == expr) {
-            return Pair.pairOf(features.get(0).exprKind, features);
+        if (features.size() == 1 && features.get(0).getTExpression() == expr) {
+            return Pair.pairOf(features.get(0).getExprKind(), features);
         } else {
             return Pair.pairOf(ExprKind.composite, features);
         }

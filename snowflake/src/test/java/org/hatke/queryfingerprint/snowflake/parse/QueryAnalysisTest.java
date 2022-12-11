@@ -72,7 +72,7 @@ public class QueryAnalysisTest {
 
         // exprAnalysis();
 
-        // exprFuncApply();
+        exprFuncApply();
     }
 
     private static void exprAnalysis() {

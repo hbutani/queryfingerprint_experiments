@@ -9,6 +9,7 @@ import gudusoft.gsqlparser.EExpressionType;
 import gudusoft.gsqlparser.nodes.TCTE;
 import gudusoft.gsqlparser.nodes.TExpression;
 import gudusoft.gsqlparser.nodes.TObjectName;
+import gudusoft.gsqlparser.nodes.TResultColumn;
 import gudusoft.gsqlparser.nodes.TTable;
 import gudusoft.gsqlparser.nodes.TTableList;
 import gudusoft.gsqlparser.sqlenv.ESQLDataObjectType;
@@ -53,9 +54,6 @@ class SingleQB implements QB {
     private Optional<SQLClauseType> parentClause;
 
     private ImmutableList<Source> fromSources;
-
-    private ImmutableList<Column> columns;
-    private ImmutableMap<String, Column> columnsMap;
 
     private final Features blockFeatures = new Features();
 
@@ -226,15 +224,12 @@ class SingleQB implements QB {
     private void addWhereExpr(ExprFeature eInfo,
                               boolean isConjunct) {
 
-        if (eInfo.hasColumnRef()) {
-            blockFeatures.filteredColumns.add(eInfo.colRef.get().getColumn());
-        }
+        eInfo.getColumnRef().map(crf -> blockFeatures.filteredColumns.add(crf.getColumn()));
 
-        if (eInfo.hasFunctionCall()) {
-            blockFeatures.functionApplications.add(eInfo.getFuncCall());
-        }
+        eInfo.getFuncCall().map(fcf -> blockFeatures.functionApplications.add(fcf));
 
-        if (eInfo.isPredicate()) {
+
+        if (eInfo.getExprKind() == ExprKind.predicate) {
             if (isConjunct) {
                 blockFeatures.prunablePredicates.add(eInfo);
             } else {
@@ -284,13 +279,33 @@ class SingleQB implements QB {
         // add to functionApplications
     }
 
+    private ImmutableMap<String, Column> outColumnsMap;
+
     private void analyzeResultClause() {
+
+        if (selectStat.getResultColumnList() == null || selectStat.getResultColumnList().size() == 0) {
+            return;
+        }
+
+        ImmutableMap.Builder<String, Column> outB = new ImmutableMap.Builder<>();
+
+        for(TResultColumn r : selectStat.getResultColumnList()) {
+
+        }
+
         // TODO
         // for each resultColumn run the ExpressionAnalyzer
         // add to extracted predicates and joins of this QB
         // add to functionApplications
 
         // setup the output Shape used by resolveColumn
+        buildOutputColumnMap();
+    }
+
+
+
+    private void buildOutputColumnMap() {
+
     }
 
     ImmutableList<Source> getFromSources() {
@@ -327,7 +342,7 @@ class SingleQB implements QB {
     }
 
     public ImmutableMap<String, Column> getColumnsMap() {
-        return columnsMap;
+        return outColumnsMap;
     }
 
     public ImmutableSet<Column> getScannedColumns() {

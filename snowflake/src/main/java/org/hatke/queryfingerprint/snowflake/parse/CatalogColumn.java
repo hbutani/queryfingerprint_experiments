@@ -2,13 +2,9 @@ package org.hatke.queryfingerprint.snowflake.parse;
 
 import com.google.common.base.Objects;
 import gudusoft.gsqlparser.nodes.TObjectName;
-import gudusoft.gsqlparser.nodes.TTable;
 import gudusoft.gsqlparser.sqlenv.TSQLEnv;
-import org.hatke.utils.Pair;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.OptionalInt;
 
 public class CatalogColumn implements Column {
 
