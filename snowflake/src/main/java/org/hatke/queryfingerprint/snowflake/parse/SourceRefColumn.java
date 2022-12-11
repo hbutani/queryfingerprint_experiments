@@ -24,7 +24,7 @@ public class SourceRefColumn implements Column {
             segments.set(segments.size() - 2, srcAlias);
             fqName = segments.stream().collect(Collectors.joining("."));
         } else {
-            fqName = sourceColumn.getFQN();
+            fqName = String.format("%1$s.%2$s", srcAlias, segments.get(0));
         }
     }
 

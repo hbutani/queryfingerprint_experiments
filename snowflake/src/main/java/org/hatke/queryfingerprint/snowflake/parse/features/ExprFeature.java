@@ -43,6 +43,10 @@ public interface ExprFeature {
         return Optional.empty();
     }
 
+    default Optional<PredicateFeature> getPredicate() {
+        return Optional.empty();
+    }
+
     default Optional<FuncCallFeature> setFunctionCall(TExpression expr,
                                                       String funcName,
                                                       FunctionClass funcClass) {

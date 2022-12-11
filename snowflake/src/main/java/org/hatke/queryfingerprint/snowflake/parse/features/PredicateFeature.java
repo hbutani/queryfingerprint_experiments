@@ -5,6 +5,7 @@ import gudusoft.gsqlparser.nodes.TExpression;
 import org.hatke.queryfingerprint.snowflake.parse.ColumnRef;
 
 import java.util.Optional;
+import java.util.function.Predicate;
 
 public class PredicateFeature extends BaseFeature {
 
@@ -34,6 +35,10 @@ public class PredicateFeature extends BaseFeature {
 
     public ConstantFeature getValueFeature() {
         return valueFeature;
+    }
+
+    public Optional<PredicateFeature> getPredicate() {
+        return Optional.of(this);
     }
 
     public String toString() {

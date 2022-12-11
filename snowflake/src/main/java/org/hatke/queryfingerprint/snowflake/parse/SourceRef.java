@@ -50,7 +50,6 @@ class SourceRef implements Source {
                 c = sc;
                 bm.put(c.getName(), c);
                 bm.put(c.getFQN(), c);
-                bm.put(sc.getSourceColumn().getFQN(), c);
             }
             b.add(c);
         }

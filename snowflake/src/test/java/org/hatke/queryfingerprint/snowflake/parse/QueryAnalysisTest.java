@@ -1,5 +1,6 @@
 package org.hatke.queryfingerprint.snowflake.parse;
 
+import com.google.common.collect.ImmutableList;
 import gudusoft.gsqlparser.EDbVendor;
 import gudusoft.gsqlparser.sqlenv.TSQLEnv;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
@@ -52,27 +53,26 @@ public class QueryAnalysisTest {
 
     public static void main(String[] args) {
 
-//        QueryAnalysis qA1 = new QueryAnalysis(sqlEnv, result_expressions);
-//        showExpressionTrees(qA1.getTopLevelQB().getSelectStat());
+        ImmutableList<String> queries = ImmutableList.of(
+                TPCDSQueries.q1,
+                // TPCDSQueries.q2,
+                TPCDSQueries.q3,
+                TPCDSQueries.q6,
+                TPCDSQueries.q9
+                // TPCDSQueries.q10
+        );
 
-        // QueryAnalysis qA2 = new QueryAnalysis(sqlEnv, basic_join);
+        for(String q : queries) {
+            QueryAnalysis qA = new QueryAnalysis(sqlEnv, q);
+            Show.show(qA, System.out);
 
-//        QueryAnalysis qA3 = new QueryAnalysis(sqlEnv, basic_cte);
-//        Show.show(qA3, System.out);
+        }
 
-//        QueryAnalysis qA1 = new QueryAnalysis(sqlEnv, TPCDSQueries.q1);
-//        Show.show(qA1, System.out);
-
-        // show no errors 1, 3
-
-        QueryAnalysis tpcdsQA = new QueryAnalysis(sqlEnv, TPCDSQueries.q1);
-        Show.show(tpcdsQA, System.out);
-//
 //        showExpressionTrees(tpcdsQA.getTopLevelQB().getSelectStat());
 
         // exprAnalysis();
 
-        exprFuncApply();
+        // exprFuncApply();
     }
 
     private static void exprAnalysis() {

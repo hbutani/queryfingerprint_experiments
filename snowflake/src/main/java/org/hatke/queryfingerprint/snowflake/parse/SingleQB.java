@@ -17,17 +17,22 @@ import gudusoft.gsqlparser.sqlenv.TSQLEnv;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
 import org.hatke.queryfingerprint.snowflake.parse.features.ExprFeature;
 import org.hatke.queryfingerprint.snowflake.parse.features.ExprKind;
+import org.hatke.queryfingerprint.snowflake.parse.features.FuncCallFeature;
+import org.hatke.queryfingerprint.snowflake.parse.features.JoinFeature;
+import org.hatke.queryfingerprint.snowflake.parse.features.PredicateFeature;
 import org.hatke.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 class SingleQB implements QB {
 
@@ -223,19 +228,15 @@ class SingleQB implements QB {
 
     private void addWhereExpr(ExprFeature eInfo,
                               boolean isConjunct) {
-
         eInfo.getColumnRef().map(crf -> blockFeatures.filteredColumns.add(crf.getColumn()));
-
         eInfo.getFuncCall().map(fcf -> blockFeatures.functionApplications.add(fcf));
-
-
-        if (eInfo.getExprKind() == ExprKind.predicate) {
+        eInfo.getPredicate().stream().forEach(p -> {
             if (isConjunct) {
-                blockFeatures.prunablePredicates.add(eInfo);
+                blockFeatures.prunablePredicates.add(p);
             } else {
-                blockFeatures.otherPredicates.add(eInfo);
+                blockFeatures.otherPredicates.add(p);
             }
-        }
+        });
     }
 
     private void analyzeWhereClause() {
@@ -279,7 +280,47 @@ class SingleQB implements QB {
         // add to functionApplications
     }
 
-    private ImmutableMap<String, Column> outColumnsMap;
+    private ImmutableList<Column> outColumns = ImmutableList.of();
+    private ImmutableMap<String, Column> outColumnsMap = ImmutableMap.of();
+
+    private void addResultExprFeatures(ExprFeature exprInfo) {
+        exprInfo.getColumnRef().stream().forEach(c -> blockFeatures.accesedColumns.add(c.getColumn()));
+        exprInfo.getFuncCall().stream().forEach(fc -> blockFeatures.functionApplications.add(fc));
+        exprInfo.getPredicate().stream().forEach(p -> blockFeatures.otherPredicates.add(p));
+    }
+
+    private QBOutColumn analyzeResultColumn(TResultColumn resultColumn) {
+        TExpression resExpr = resultColumn.getExpr();
+        String alias = resultColumn.getColumnAlias();
+        alias = alias.trim().equals("") ? null : alias;
+
+        if (alias != null) {
+            alias = Utils.normalizedColName(getSqlEnv(), resultColumn.getAliasClause().getAliasName()).get(0);
+        }
+
+        if (alias == null) {
+            alias = resExpr.toString();
+        }
+
+        ExpressionAnalyzer eA = new ExpressionAnalyzer(this, resExpr);
+        Pair<ExprKind, ImmutableList<ExprFeature>> exprInfos = eA.analyze();
+
+        exprInfos.right.stream().forEach(eI -> addResultExprFeatures(eI));
+
+        if (exprInfos.left == ExprKind.column_ref) {
+            return new QBOutColumn(this, qA.nextId(),
+                    alias, ImmutableList.of(),
+                    exprInfos.right.get(0).getColumnRef().map(cr -> cr.getColumn()));
+        } else {
+            List<Column> dependColumns =
+                    exprInfos.right.stream().flatMap(eI -> eI.getColumnRef().stream().map(cr -> cr.getColumn()))
+                    .collect(Collectors.toList());
+
+            return new QBOutColumn(this, qA.nextId(),
+                    alias, ImmutableList.copyOf(dependColumns),
+                    Optional.empty());
+        }
+    }
 
     private void analyzeResultClause() {
 
@@ -287,25 +328,17 @@ class SingleQB implements QB {
             return;
         }
 
-        ImmutableMap.Builder<String, Column> outB = new ImmutableMap.Builder<>();
+        ImmutableList.Builder<Column> outC = new ImmutableList.Builder<>();
+        ImmutableMap.Builder<String, Column> outM = new ImmutableMap.Builder<>();
 
         for(TResultColumn r : selectStat.getResultColumnList()) {
-
+            QBOutColumn oCol = analyzeResultColumn(r);
+            outC.add(oCol);
+            outM.put(oCol.getName(), oCol);
         }
 
-        // TODO
-        // for each resultColumn run the ExpressionAnalyzer
-        // add to extracted predicates and joins of this QB
-        // add to functionApplications
-
-        // setup the output Shape used by resolveColumn
-        buildOutputColumnMap();
-    }
-
-
-
-    private void buildOutputColumnMap() {
-
+        outColumns = outC.build();
+        outColumnsMap = outM.build();
     }
 
     ImmutableList<Source> getFromSources() {
@@ -337,8 +370,7 @@ class SingleQB implements QB {
     }
 
     public ImmutableList<Column> getColumns() {
-        // TODO fixme
-        return ImmutableList.of();
+        return outColumns;
     }
 
     public ImmutableMap<String, Column> getColumnsMap() {
@@ -347,7 +379,7 @@ class SingleQB implements QB {
 
     public ImmutableSet<Column> getScannedColumns() {
         ImmutableList.Builder<Column> b = new ImmutableList.Builder<>();
-        b.addAll(blockFeatures.projectedColumns.build());
+        b.addAll(blockFeatures.accesedColumns.build());
         b.addAll(blockFeatures.filteredColumns.build());
         return b.build().stream().collect(ImmutableSet.toImmutableSet());
     }
@@ -356,15 +388,15 @@ class SingleQB implements QB {
         return blockFeatures.filteredColumns.build().stream().collect(ImmutableSet.toImmutableSet());
     }
 
-    public ImmutableList<ExprFeature> prunablePredicates() {
+    public ImmutableList<PredicateFeature> prunablePredicates() {
         return blockFeatures.prunablePredicates.build();
     }
 
-    public ImmutableList<ExprFeature> otherPredicates() {
+    public ImmutableList<PredicateFeature> otherPredicates() {
         return blockFeatures.otherPredicates.build();
     }
 
-    public ImmutableList<ExprFeature> functionApplications() {
+    public ImmutableList<FuncCallFeature> functionApplications() {
         return blockFeatures.functionApplications.build();
     }
 
@@ -382,18 +414,19 @@ class SingleQB implements QB {
     }
 
     class Features {
-        private ImmutableList.Builder<Column> projectedColumns = new ImmutableList.Builder<>();
-        private ImmutableList.Builder<ExprFeature> functionApplications = new ImmutableList.Builder<>();
+
+        private ImmutableList.Builder<Column> accesedColumns = new ImmutableList.Builder<>();
+        private ImmutableList.Builder<FuncCallFeature> functionApplications = new ImmutableList.Builder<>();
 
         private ImmutableList.Builder<Column> filteredColumns = new ImmutableList.Builder<>();
 
         /**
          * execution plan for this predicate can be potentially influenced by the physical layout of the table.
          */
-        private ImmutableList.Builder<ExprFeature> prunablePredicates = new ImmutableList.Builder<>();
+        private ImmutableList.Builder<PredicateFeature> prunablePredicates = new ImmutableList.Builder<>();
 
-        private ImmutableList.Builder<ExprFeature> otherPredicates = new ImmutableList.Builder<>();
+        private ImmutableList.Builder<PredicateFeature> otherPredicates = new ImmutableList.Builder<>();
 
-        private ImmutableList.Builder<ExprFeature> joins = new ImmutableList.Builder<>();
+        private ImmutableList.Builder<JoinFeature> joins = new ImmutableList.Builder<>();
     }
 }

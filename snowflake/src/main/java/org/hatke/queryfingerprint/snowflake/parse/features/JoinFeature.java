@@ -2,7 +2,7 @@ package org.hatke.queryfingerprint.snowflake.parse.features;
 
 import gudusoft.gsqlparser.nodes.TExpression;
 
-class JoinFeature extends BaseFeature{
+public class JoinFeature extends BaseFeature{
     private final ExprFeature leftFeature;
     private final ExprFeature rightFeature;
 
