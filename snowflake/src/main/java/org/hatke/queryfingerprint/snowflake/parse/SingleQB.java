@@ -99,6 +99,7 @@ class SingleQB implements QB {
     private void build() {
         buildCTEs();
         buildSources();
+        // TODO analyzeSourceJoins();
         setupInputResolution();
         analyzeWhereClause();
         analyzeGroupByClause();
@@ -120,7 +121,7 @@ class SingleQB implements QB {
                 TObjectName cteName = cte.getTableName();
                 Source src = QB.create(qA, false, QBType.cte, cteSelect,
                         Optional.empty(), Optional.empty());
-                SourceRef srcRef = new SourceRef(qA, this, src, cteName.toString());
+                SourceRef srcRef = new SourceRef(qA, this, src, cteName.toString()); // TODO normalize CTENAME
                 bm.put(srcRef.alias.get(), srcRef);
                 bm.put(srcRef.fqAlias.get(), srcRef);
             }
@@ -226,17 +227,21 @@ class SingleQB implements QB {
         return unambiguousSourceColMap;
     }
 
-    private void addWhereExpr(ExprFeature eInfo,
-                              boolean isConjunct) {
-        eInfo.getColumnRef().map(crf -> blockFeatures.filteredColumns.add(crf.getColumn()));
-        eInfo.getFuncCall().map(fcf -> blockFeatures.functionApplications.add(fcf));
+    private void addExprFeature(ExprFeature eInfo,
+                                boolean isWhereConjunct) {
+        eInfo.getColumnRefs().stream().map(crf -> blockFeatures.filteredColumns.add(crf.getColumn()));
+        eInfo.getFuncCalls().stream().map(fcf -> blockFeatures.functionApplications.add(fcf));
         eInfo.getPredicate().stream().forEach(p -> {
-            if (isConjunct) {
+            if (isWhereConjunct) {
                 blockFeatures.prunablePredicates.add(p);
             } else {
                 blockFeatures.otherPredicates.add(p);
             }
         });
+
+        if (eInfo.getExprKind() == ExprKind.join) {
+            blockFeatures.joins.add((JoinFeature) eInfo);
+        }
     }
 
     private void analyzeWhereClause() {
@@ -265,9 +270,9 @@ class SingleQB implements QB {
             Pair<ExprKind, ImmutableList<ExprFeature>> exprInfos =
                     eA.analyze();
             if (exprInfos.left != ExprKind.composite) {
-                addWhereExpr(exprInfos.right.get(0), true);
+                addExprFeature(exprInfos.right.get(0), true);
             } else {
-                exprInfos.right.forEach(eI -> addWhereExpr(eI, false));
+                exprInfos.right.forEach(eI -> addExprFeature(eI, false));
             }
         }
 
@@ -283,12 +288,6 @@ class SingleQB implements QB {
     private ImmutableList<Column> outColumns = ImmutableList.of();
     private ImmutableMap<String, Column> outColumnsMap = ImmutableMap.of();
 
-    private void addResultExprFeatures(ExprFeature exprInfo) {
-        exprInfo.getColumnRef().stream().forEach(c -> blockFeatures.accesedColumns.add(c.getColumn()));
-        exprInfo.getFuncCall().stream().forEach(fc -> blockFeatures.functionApplications.add(fc));
-        exprInfo.getPredicate().stream().forEach(p -> blockFeatures.otherPredicates.add(p));
-    }
-
     private QBOutColumn analyzeResultColumn(TResultColumn resultColumn) {
         TExpression resExpr = resultColumn.getExpr();
         String alias = resultColumn.getColumnAlias();
@@ -298,26 +297,27 @@ class SingleQB implements QB {
             alias = Utils.normalizedColName(getSqlEnv(), resultColumn.getAliasClause().getAliasName()).get(0);
         }
 
-        if (alias == null) {
-            alias = resExpr.toString();
-        }
-
         ExpressionAnalyzer eA = new ExpressionAnalyzer(this, resExpr);
         Pair<ExprKind, ImmutableList<ExprFeature>> exprInfos = eA.analyze();
 
-        exprInfos.right.stream().forEach(eI -> addResultExprFeatures(eI));
+        exprInfos.right.stream().forEach(eI -> addExprFeature(eI, false));
 
         if (exprInfos.left == ExprKind.column_ref) {
+            ExprFeature eI = exprInfos.right.get(0);
+            Column col = eI.getColumnRefs().get(0).getColumn();
             return new QBOutColumn(this, qA.nextId(),
-                    alias, ImmutableList.of(),
-                    exprInfos.right.get(0).getColumnRef().map(cr -> cr.getColumn()));
+                    alias == null ? col.getName() : alias,
+                    ImmutableList.of(),
+                    Optional.of(col));
         } else {
             List<Column> dependColumns =
-                    exprInfos.right.stream().flatMap(eI -> eI.getColumnRef().stream().map(cr -> cr.getColumn()))
+                    exprInfos.right.stream().
+                            flatMap(eI -> eI.getColumnRefs().stream().map(cr -> cr.getColumn()))
                     .collect(Collectors.toList());
 
             return new QBOutColumn(this, qA.nextId(),
-                    alias, ImmutableList.copyOf(dependColumns),
+                    alias == null ? resExpr.toString() : alias ,
+                    ImmutableList.copyOf(dependColumns),
                     Optional.empty());
         }
     }
@@ -398,6 +398,10 @@ class SingleQB implements QB {
 
     public ImmutableList<FuncCallFeature> functionApplications() {
         return blockFeatures.functionApplications.build();
+    }
+
+    public ImmutableList<JoinFeature> joins() {
+        return blockFeatures.joins.build();
     }
 
     @Override

@@ -1,5 +1,6 @@
 package org.hatke.queryfingerprint.snowflake.parse.features;
 
+import com.google.common.collect.ImmutableList;
 import gudusoft.gsqlparser.EComparisonType;
 import gudusoft.gsqlparser.EExpressionType;
 import gudusoft.gsqlparser.nodes.TConstant;
@@ -7,6 +8,7 @@ import gudusoft.gsqlparser.nodes.TExpression;
 import gudusoft.gsqlparser.nodes.TFunctionCall;
 import gudusoft.gsqlparser.nodes.TObjectName;
 import gudusoft.gsqlparser.sqlenv.ESQLDataObjectType;
+import org.hatke.queryfingerprint.snowflake.parse.Column;
 import org.hatke.utils.Pair;
 import org.hatke.queryfingerprint.snowflake.parse.ColumnRef;
 import org.hatke.queryfingerprint.snowflake.parse.QB;
@@ -34,13 +36,22 @@ public interface ExprFeature {
 
     ExprKind getExprKind();
 
-    default Optional<ColumnRef> getColumnRef() {
-        return Optional.empty();
+    default ImmutableList<ColumnRef> getColumnRefs() {
+        return ImmutableList.of();
     }
 
+    default boolean isSingleColumn() {
+        ImmutableList<ColumnRef> cRs = getColumnRefs();
+        return cRs.size() == 1;
+    }
 
-    default Optional<FuncCallFeature> getFuncCall() {
-        return Optional.empty();
+    default ImmutableList<FuncCallFeature> getFuncCalls() {
+        return ImmutableList.of();
+    }
+
+    default boolean isSingleFuncCall() {
+        ImmutableList<ColumnRef> cRs = getColumnRefs();
+        return cRs.size() == 1;
     }
 
     default Optional<PredicateFeature> getPredicate() {
@@ -53,7 +64,7 @@ public interface ExprFeature {
         return Optional.empty();
     }
 
-    static PredicateFeature combineIntoPred(ExprFeature leftFeature,
+    static ExprFeature combineIntoPredOrJoin(ExprFeature leftFeature,
                                             TExpression expr,
                                             EComparisonType compOp,
                                             ExprFeature rightFeature) {
@@ -62,11 +73,17 @@ public interface ExprFeature {
             return null;
         }
 
-        if (leftFeature.getColumnRef().isPresent() && rightFeature.getExprKind() == ExprKind.constant) {
+        if (leftFeature.isSingleColumn() && rightFeature.getExprKind() == ExprKind.constant) {
             return new PredicateFeature(expr, leftFeature, compOp, (ConstantFeature) rightFeature);
-        } else if (rightFeature.getColumnRef().isPresent() &&
-                leftFeature.getExprKind() == ExprKind.constant) {
+        } else if (rightFeature.isSingleColumn() && leftFeature.getExprKind() == ExprKind.constant) {
             return new PredicateFeature(expr, rightFeature, flipCompOp(compOp), (ConstantFeature) leftFeature);
+        } else if (leftFeature.isSingleColumn() && rightFeature.isSingleColumn() &&
+                compOp == EComparisonType.equals) {
+            Column lc = leftFeature.getColumnRefs().get(0).getColumn();
+            Column rc = rightFeature.getColumnRefs().get(0).getColumn();
+            if (lc.getSource().getId() != rc.getSource().getId()) {
+                return new JoinFeature(expr, leftFeature, rightFeature, JoinType.inner);
+            }
         }
 
         return null;
@@ -137,7 +154,7 @@ public interface ExprFeature {
         ExprFeature leftFeature = match(leftOperand, qb);
         ExprFeature rightFeature = match(rightOperand, qb);
 
-        return combineIntoPred(leftFeature, expr, expr.getComparisonType(), rightFeature);
+        return combineIntoPredOrJoin(leftFeature, expr, expr.getComparisonType(), rightFeature);
 
     }
 

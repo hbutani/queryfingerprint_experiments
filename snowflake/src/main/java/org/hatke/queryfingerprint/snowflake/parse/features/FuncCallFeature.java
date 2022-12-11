@@ -1,5 +1,6 @@
 package org.hatke.queryfingerprint.snowflake.parse.features;
 
+import com.google.common.collect.ImmutableList;
 import gudusoft.gsqlparser.nodes.TExpression;
 import org.hatke.queryfingerprint.snowflake.parse.ColumnRef;
 
@@ -21,12 +22,12 @@ public class FuncCallFeature extends BaseFeature {
         this.funcClass = funcClass;
     }
 
-    public Optional<ColumnRef> getColumnRef() {
-        return colRef.getColumnRef();
+    public ImmutableList<ColumnRef> getColumnRefs() {
+        return colRef.getColumnRefs();
     }
 
-    public Optional<FuncCallFeature> getFuncCall() {
-        return Optional.of(this);
+    public ImmutableList<FuncCallFeature> getFuncCalls() {
+        return ImmutableList.of(this);
     }
 
     public Optional<String> getFuncName() {

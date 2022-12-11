@@ -122,7 +122,7 @@ public class Utils {
 
             String normalizeNm = segments.stream().collect(Collectors.joining("."));
 
-            return Pair.pairOf(segments.get(0), normalizeNm);
+            return Pair.pairOf(segments.get(segments.size() - 1), normalizeNm);
         }
 
     }

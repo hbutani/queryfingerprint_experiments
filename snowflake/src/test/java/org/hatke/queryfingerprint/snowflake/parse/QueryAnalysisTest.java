@@ -65,6 +65,7 @@ public class QueryAnalysisTest {
         for(String q : queries) {
             QueryAnalysis qA = new QueryAnalysis(sqlEnv, q);
             Show.show(qA, System.out);
+            System.out.println("-------------------------------------------------------------------------------");
 
         }
 

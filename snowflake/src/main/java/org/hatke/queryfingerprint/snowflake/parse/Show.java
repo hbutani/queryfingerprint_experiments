@@ -130,7 +130,8 @@ public class Show {
                         "scanned_columns", "filtered_columns",
                         "prunable_predicates", "other_predicates",
                         "function_applications",
-                        "columns"),
+                        "joins",
+                        "out_columns"),
                 qb -> Integer.toString(qb.getId()),
                 qb -> Boolean.toString(qb.isTopLevel()),
                 qb -> qb.getQbType().name(),
@@ -154,6 +155,9 @@ public class Show {
                         map(eF -> eF.toString()).
                         collect(Collectors.joining(", ", "[", "]")),
                 qb -> qb.functionApplications().stream().
+                        map(eF -> eF.toString()).
+                        collect(Collectors.joining(", ", "[", "]")),
+                qb -> qb.joins().stream().
                         map(eF -> eF.toString()).
                         collect(Collectors.joining(", ", "[", "]")),
                 qb -> qb.getColumns().stream().map(c -> c.getName() + "(" + c.getId() + ")").

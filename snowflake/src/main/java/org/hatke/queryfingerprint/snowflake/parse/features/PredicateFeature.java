@@ -1,11 +1,11 @@
 package org.hatke.queryfingerprint.snowflake.parse.features;
 
+import com.google.common.collect.ImmutableList;
 import gudusoft.gsqlparser.EComparisonType;
 import gudusoft.gsqlparser.nodes.TExpression;
 import org.hatke.queryfingerprint.snowflake.parse.ColumnRef;
 
 import java.util.Optional;
-import java.util.function.Predicate;
 
 public class PredicateFeature extends BaseFeature {
 
@@ -21,12 +21,12 @@ public class PredicateFeature extends BaseFeature {
         this.valueFeature = valueFeature;
     }
 
-    public Optional<ColumnRef> getColumnRef() {
-        return colFeature.getColumnRef();
+    public ImmutableList<ColumnRef> getColumnRefs() {
+        return colFeature.getColumnRefs();
     }
 
-    public Optional<FuncCallFeature> getFuncCall() {
-        return colFeature.getFuncCall();
+    public ImmutableList<FuncCallFeature> getFuncCalls() {
+        return colFeature.getFuncCalls();
     }
 
     public EComparisonType getComparisonType() {

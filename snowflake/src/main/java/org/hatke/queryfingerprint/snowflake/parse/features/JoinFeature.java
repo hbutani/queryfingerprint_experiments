@@ -1,6 +1,8 @@
 package org.hatke.queryfingerprint.snowflake.parse.features;
 
+import com.google.common.collect.ImmutableList;
 import gudusoft.gsqlparser.nodes.TExpression;
+import org.hatke.queryfingerprint.snowflake.parse.ColumnRef;
 
 public class JoinFeature extends BaseFeature{
     private final ExprFeature leftFeature;
@@ -8,12 +10,26 @@ public class JoinFeature extends BaseFeature{
 
     private final JoinType joinType;
 
-    JoinFeature(TExpression expr, ExprKind exprKind,
+    JoinFeature(TExpression expr,
                        ExprFeature leftFeature, ExprFeature rightFeature, JoinType joinType) {
-        super(expr, exprKind);
+        super(expr, ExprKind.join);
         this.leftFeature = leftFeature;
         this.rightFeature = rightFeature;
         this.joinType = joinType;
+    }
+
+    public ImmutableList<ColumnRef> getColumnRefs() {
+        ImmutableList.Builder<ColumnRef> b = new ImmutableList.Builder<>();
+        b.addAll(leftFeature.getColumnRefs());
+        b.addAll(rightFeature.getColumnRefs());
+        return b.build();
+    }
+
+    public ImmutableList<FuncCallFeature> getFuncCalls() {
+        ImmutableList.Builder<FuncCallFeature> b = new ImmutableList.Builder<>();
+        b.addAll(leftFeature.getFuncCalls());
+        b.addAll(rightFeature.getFuncCalls());
+        return b.build();
     }
 
     public ExprFeature getLeftFeature() {
