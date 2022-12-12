@@ -8,5 +8,6 @@
  */
 
 rootProject.name = "queryfingerprint"
+include("common")
 include("snowflake")
 
