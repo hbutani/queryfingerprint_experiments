@@ -81,6 +81,9 @@ public class Show {
                 for (Source s : qb.getFromSources()) {
                     collect(s);
                 }
+                for(QB wQB : qb.getWhereSubQueryBlocks()) {
+                    collect(wQB);
+                }
             }
         }
 
@@ -131,6 +134,7 @@ public class Show {
                         "prunable_predicates", "other_predicates",
                         "function_applications",
                         "joins",
+                        "correlated_joins",
                         "out_columns"),
                 qb -> Integer.toString(qb.getId()),
                 qb -> Boolean.toString(qb.isTopLevel()),
@@ -158,6 +162,9 @@ public class Show {
                         map(eF -> eF.toString()).
                         collect(Collectors.joining(", ", "[", "]")),
                 qb -> qb.joins().stream().
+                        map(eF -> eF.toString()).
+                        collect(Collectors.joining(", ", "[", "]")),
+                qb -> qb.correlatedJoins().stream().
                         map(eF -> eF.toString()).
                         collect(Collectors.joining(", ", "[", "]")),
                 qb -> qb.getColumns().stream().map(c -> c.getName() + "(" + c.getId() + ")").

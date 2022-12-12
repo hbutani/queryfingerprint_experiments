@@ -2,6 +2,7 @@ package org.hatke.queryfingerprint.snowflake.parse;
 
 
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -15,6 +16,7 @@ import gudusoft.gsqlparser.nodes.TTableList;
 import gudusoft.gsqlparser.sqlenv.ESQLDataObjectType;
 import gudusoft.gsqlparser.sqlenv.TSQLEnv;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
+import org.hatke.queryfingerprint.snowflake.parse.features.CorrelateJoinFeature;
 import org.hatke.queryfingerprint.snowflake.parse.features.ExprFeature;
 import org.hatke.queryfingerprint.snowflake.parse.features.ExprKind;
 import org.hatke.queryfingerprint.snowflake.parse.features.FuncCallFeature;
@@ -84,7 +86,8 @@ class SingleQB implements QB {
 
     @Override
     public Optional<Column> resolveColumn(TObjectName objName) {
-        return Optional.empty();
+        String colName = Utils.stringValue(objName, ESQLDataObjectType.dotColumn);
+        return Optional.ofNullable(outColumnsMap.get(colName));
     }
 
     @Override
@@ -198,7 +201,11 @@ class SingleQB implements QB {
 
         for(Source s : fromSources) {
             for(Column c : s.columns()) {
-                addCol.apply(c, Column::getName);
+                // not checking if name is present in the ParentQB
+                // so as a defensive move assuming it can be ambiguous.
+                if (!parentQB.isPresent()) {
+                    addCol.apply(c, Column::getName);
+                }
                 addCol.apply(c, Column::getFQN);
             }
         }
@@ -208,8 +215,7 @@ class SingleQB implements QB {
     }
 
     public Optional<ColumnRef> resolveInputColumn(TObjectName objName) {
-        Pair<String, String> cName =
-                Utils.normalizedName(getSqlEnv(), objName, ESQLDataObjectType.dotColumn);
+        Pair<String, String> cName = Utils.fqNormalizedColName(getSqlEnv(), objName);
         ColumnRef c = unambiguousSourceColMap.get(cName.left);
 
         if (c == null) {
@@ -218,6 +224,9 @@ class SingleQB implements QB {
 
         if ( c == null && parentQB.isPresent() ) {
             c =  parentQB.get().resolveInputColumn(objName).orElse(null);
+            if ( c instanceof Column) {
+                c = new Column.CorrelateColRef((Column) c, parentQB.get());
+            }
         }
 
         return Optional.ofNullable(c);
@@ -242,6 +251,26 @@ class SingleQB implements QB {
         if (eInfo.getExprKind() == ExprKind.join) {
             blockFeatures.joins.add((JoinFeature) eInfo);
         }
+
+        if (eInfo.getExprKind() == ExprKind.correlate_join) {
+            parentQB.get().addCorrelatedJoinFeature((CorrelateJoinFeature) eInfo);
+        }
+    }
+
+    private ImmutableMap.Builder<TExpression, QB> whereSubQBs = new ImmutableMap.Builder<>();
+
+
+    public ImmutableCollection<QB> getWhereSubQueryBlocks() {
+        return whereSubQBs.build().values();
+    }
+
+    private void buildSubqueriesInWhere(TExpression whereCond) {
+        ImmutableSet<TExpression> subqueries = FindExpressionsByType.findSubqueries(whereCond);
+        for(TExpression subE : subqueries) {
+            QB subQB = QB.create(qA, false, QBType.sub_query, subE.getSubQuery(),
+                    Optional.of(this), Optional.of(SQLClauseType.where));
+            whereSubQBs.put(subE, subQB);
+        }
     }
 
     private void analyzeWhereClause() {
@@ -251,6 +280,8 @@ class SingleQB implements QB {
         }
 
         TExpression whereCond = selectStat.getWhereClause().getCondition();
+        buildSubqueriesInWhere(whereCond);
+
         ArrayList conjuncts = null;
         if (whereCond.getExpressionType() == EExpressionType.logical_and_t) {
             conjuncts = whereCond.getFlattedAndOrExprs();
@@ -404,6 +435,15 @@ class SingleQB implements QB {
         return blockFeatures.joins.build();
     }
 
+    public ImmutableList<CorrelateJoinFeature> correlatedJoins() {
+        return blockFeatures.correlateJoins.build();
+    }
+
+    public void addCorrelatedJoinFeature(CorrelateJoinFeature cF) {
+        assert(cF.getColRef().appearsInQB().get() == this);
+        blockFeatures.correlateJoins.add(cF);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -432,5 +472,7 @@ class SingleQB implements QB {
         private ImmutableList.Builder<PredicateFeature> otherPredicates = new ImmutableList.Builder<>();
 
         private ImmutableList.Builder<JoinFeature> joins = new ImmutableList.Builder<>();
+
+        private ImmutableList.Builder<CorrelateJoinFeature> correlateJoins = new ImmutableList.Builder<>();
     }
 }

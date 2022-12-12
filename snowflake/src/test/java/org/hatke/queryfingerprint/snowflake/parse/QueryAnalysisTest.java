@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import gudusoft.gsqlparser.EDbVendor;
 import gudusoft.gsqlparser.sqlenv.TSQLEnv;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
+import io.ad.parse.tpcds.utils.FingerPrintUtils;
 
 public class QueryAnalysisTest {
     private static String basic_1 =
@@ -74,6 +75,8 @@ public class QueryAnalysisTest {
         // exprAnalysis();
 
         // exprFuncApply();
+
+        // subQueryInWhere();
     }
 
     private static void exprAnalysis() {
@@ -92,5 +95,19 @@ public class QueryAnalysisTest {
 
         QueryAnalysis tpcdsQA = new QueryAnalysis(sqlEnv, expr_q1);
         Show.show(tpcdsQA, System.out);
+    }
+
+    private static void subQueryInWhere() {
+        String q1 =
+                "select  ss_sales_price \n" +
+                "from stores_sales ss\n" +
+                "where ss.ss_sales_price > (select avg(ss_sales_price)*1.2\n" +
+                "from stores_sales ss2\n" +
+                "where ss.ss_store_sk = ss2.ss_store_sk)\n";
+
+        QueryAnalysis tpcdsQA = new QueryAnalysis(sqlEnv, q1);
+        Show.show(tpcdsQA, System.out);
+
+        // FingerPrintUtils.printTree(q1);
     }
 }

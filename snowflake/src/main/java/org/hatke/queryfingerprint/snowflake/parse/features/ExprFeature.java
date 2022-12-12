@@ -64,7 +64,8 @@ public interface ExprFeature {
         return Optional.empty();
     }
 
-    static ExprFeature combineIntoPredOrJoin(ExprFeature leftFeature,
+    static ExprFeature combineIntoPredOrJoin(QB qb,
+                                             ExprFeature leftFeature,
                                             TExpression expr,
                                             EComparisonType compOp,
                                             ExprFeature rightFeature) {
@@ -79,10 +80,20 @@ public interface ExprFeature {
             return new PredicateFeature(expr, rightFeature, flipCompOp(compOp), (ConstantFeature) leftFeature);
         } else if (leftFeature.isSingleColumn() && rightFeature.isSingleColumn() &&
                 compOp == EComparisonType.equals) {
-            Column lc = leftFeature.getColumnRefs().get(0).getColumn();
-            Column rc = rightFeature.getColumnRefs().get(0).getColumn();
-            if (lc.getSource().getId() != rc.getSource().getId()) {
-                return new JoinFeature(expr, leftFeature, rightFeature, JoinType.inner);
+            ColumnRef lColRef = leftFeature.getColumnRefs().get(0);
+            ColumnRef rColRef = rightFeature.getColumnRefs().get(0);
+
+            if (lColRef instanceof Column.CorrelateColRef && !(rColRef instanceof Column.CorrelateColRef) ) {
+                return new CorrelateJoinFeature(expr, (Column.CorrelateColRef) lColRef, rColRef, qb);
+            } else if (rColRef instanceof Column.CorrelateColRef && !(lColRef instanceof Column.CorrelateColRef) ) {
+                return new CorrelateJoinFeature(expr, (Column.CorrelateColRef) rColRef, lColRef, qb);
+            } else {
+
+                Column lc = lColRef.getColumn();
+                Column rc = rColRef.getColumn();
+                if (lc.getSource().getId() != rc.getSource().getId()) {
+                    return new JoinFeature(expr, leftFeature, rightFeature, JoinType.inner);
+                }
             }
         }
 
@@ -154,7 +165,7 @@ public interface ExprFeature {
         ExprFeature leftFeature = match(leftOperand, qb);
         ExprFeature rightFeature = match(rightOperand, qb);
 
-        return combineIntoPredOrJoin(leftFeature, expr, expr.getComparisonType(), rightFeature);
+        return combineIntoPredOrJoin(qb, leftFeature, expr, expr.getComparisonType(), rightFeature);
 
     }
 

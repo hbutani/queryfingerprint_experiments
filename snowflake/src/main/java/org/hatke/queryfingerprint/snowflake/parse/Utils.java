@@ -122,6 +122,7 @@ public class Utils {
 
             String normalizeNm = segments.stream().collect(Collectors.joining("."));
 
+
             return Pair.pairOf(segments.get(segments.size() - 1), normalizeNm);
         }
 
@@ -188,6 +189,26 @@ public class Utils {
 
         return segments;
 
+    }
+
+    public static Pair<String, String> fqNormalizedColName(TSQLEnv sqlEnv,
+                                                           TObjectName objName) {
+        List<String> colNames = normalizedColName(sqlEnv, objName);
+        String fqnColNm = null;
+
+        String normalizedColName = Utils.qualifiedName(colNames.toArray(new String[colNames.size()]));
+
+        if (colNames.size() == 2) {
+            EDbVendor dbVendor = sqlEnv.getDBVendor();
+            String tableSchema = sqlEnv.getDefaultSchemaName();
+            tableSchema = tableSchema != null ? normalizeIdentifier(dbVendor,
+                    ESQLDataObjectType.dotSchema, tableSchema) : null;
+            fqnColNm = Utils.qualifiedName(tableSchema, colNames.get(0), colNames.get(1));
+
+        } else {
+            fqnColNm = normalizedColName;
+        }
+        return Pair.pairOf(normalizedColName, fqnColNm);
     }
 
 
