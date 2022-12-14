@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class Utils {
@@ -80,5 +81,9 @@ public class Utils {
         sortedL1.right.forEach(i -> sortedL2.add(l2.get(i)));
 
         return pairOf(sortedL1.left, sortedL2.build());
+    }
+
+    public static <T> String optionalInfoString(String fieldName, Optional<T> val) {
+        return val.map(v -> fieldName + "=" + v).orElse("");
     }
 }

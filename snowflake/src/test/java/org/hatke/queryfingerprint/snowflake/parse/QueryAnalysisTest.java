@@ -67,7 +67,7 @@ public class QueryAnalysisTest {
             QueryAnalysis qA = new QueryAnalysis(sqlEnv, q);
             Show.show(qA, System.out);
             System.out.println("-------------------------------------------------------------------------------");
-
+            TestUtils.showFingerPrints(qA);
         }
 
 //        showExpressionTrees(tpcdsQA.getTopLevelQB().getSelectStat());

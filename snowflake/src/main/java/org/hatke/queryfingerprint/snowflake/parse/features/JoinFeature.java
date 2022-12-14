@@ -2,6 +2,7 @@ package org.hatke.queryfingerprint.snowflake.parse.features;
 
 import com.google.common.collect.ImmutableList;
 import gudusoft.gsqlparser.nodes.TExpression;
+import org.hatke.queryfingerprint.model.JoinType;
 import org.hatke.queryfingerprint.snowflake.parse.ColumnRef;
 
 public class JoinFeature extends BaseFeature{

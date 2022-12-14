@@ -8,6 +8,7 @@ import gudusoft.gsqlparser.nodes.TExpression;
 import gudusoft.gsqlparser.nodes.TFunctionCall;
 import gudusoft.gsqlparser.nodes.TObjectName;
 import gudusoft.gsqlparser.sqlenv.ESQLDataObjectType;
+import org.hatke.queryfingerprint.model.JoinType;
 import org.hatke.queryfingerprint.snowflake.parse.Column;
 import org.hatke.utils.Pair;
 import org.hatke.queryfingerprint.snowflake.parse.ColumnRef;

@@ -1,15 +1,11 @@
 package org.hatke.queryfingerprint.snowflake.parse;
 
 import com.google.common.collect.ImmutableMap;
-import gudusoft.gsqlparser.EDbVendor;
 import gudusoft.gsqlparser.TGSqlParser;
-import gudusoft.gsqlparser.nodes.TCTE;
-import gudusoft.gsqlparser.nodes.TTable;
 import gudusoft.gsqlparser.sqlenv.TSQLEnv;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
+import org.hatke.queryfingerprint.model.QBType;
 
-import java.util.ArrayList;
-import java.util.Map;
 import java.util.Optional;
 
 public class QueryAnalysis {
@@ -66,9 +62,7 @@ public class QueryAnalysis {
 
     private final QB topLevelQB;
 
-    private ImmutableMap<String, Source> cteMap = ImmutableMap.of();
-    private ArrayList<QB> queryBlocks;
-
+    private ImmutableMap<String, SourceRef> cteMap = ImmutableMap.of();
 
     int nextId() {
         return idGen++;
@@ -78,7 +72,7 @@ public class QueryAnalysis {
         return sqlEnv;
     }
 
-    void setCTEMap(ImmutableMap<String, Source> cteMap) {
+    void setCTEMap(ImmutableMap<String, SourceRef> cteMap) {
         this.cteMap = cteMap;
     }
 
@@ -86,7 +80,7 @@ public class QueryAnalysis {
         return cteMap.get(fqn);
     }
 
-    ImmutableMap<String, Source> ctes() {
+    ImmutableMap<String, SourceRef> ctes() {
         return cteMap;
     }
 

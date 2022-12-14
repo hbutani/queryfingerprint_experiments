@@ -1,12 +1,16 @@
 package org.hatke.queryfingerprint.snowflake.parse;
 
+import com.google.common.collect.ImmutableList;
 import gudusoft.gsqlparser.nodes.TObjectName;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
+import org.hatke.queryfingerprint.model.QBType;
 import org.hatke.queryfingerprint.snowflake.parse.features.CorrelateJoinFeature;
 
 import java.util.Optional;
 
 public interface QB extends Source {
+
+    int getId();
 
     boolean isTopLevel();
 
@@ -15,6 +19,10 @@ public interface QB extends Source {
     TSelectSqlStatement getSelectStat();
 
     Optional<QB> getParentQB();
+
+    void addChildQB(QB child);
+
+    ImmutableList<QB> childQBs();
 
     Optional<SQLClauseType> getParentClause();
 

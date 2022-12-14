@@ -16,6 +16,7 @@ import gudusoft.gsqlparser.nodes.TTableList;
 import gudusoft.gsqlparser.sqlenv.ESQLDataObjectType;
 import gudusoft.gsqlparser.sqlenv.TSQLEnv;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
+import org.hatke.queryfingerprint.model.QBType;
 import org.hatke.queryfingerprint.snowflake.parse.features.CorrelateJoinFeature;
 import org.hatke.queryfingerprint.snowflake.parse.features.ExprFeature;
 import org.hatke.queryfingerprint.snowflake.parse.features.ExprKind;
@@ -60,6 +61,8 @@ class SingleQB implements QB {
     private Optional<QB> parentQB;
     private Optional<SQLClauseType> parentClause;
 
+    private ImmutableList.Builder<QB> childQBs;
+
     private ImmutableList<Source> fromSources;
 
     private final Features blockFeatures = new Features();
@@ -80,6 +83,11 @@ class SingleQB implements QB {
         this.selectStat = pTree;
         this.parentQB = parentQB;
         this.parentClause = parentClause;
+        this.childQBs = new ImmutableList.Builder<>();
+
+        if (parentQB.isPresent()) {
+            parentQB.get().addChildQB(this);
+        }
 
         build();
     }
@@ -99,6 +107,14 @@ class SingleQB implements QB {
         return getColumns();
     }
 
+    public void addChildQB(QB child) {
+        childQBs.add(child);
+    }
+
+    public ImmutableList<QB> childQBs() {
+        return childQBs.build();
+    }
+
     private void build() {
         buildCTEs();
         buildSources();
@@ -110,7 +126,7 @@ class SingleQB implements QB {
     }
 
     private void buildCTEs() {
-        ImmutableMap.Builder<String, Source> bm = new ImmutableMap.Builder();
+        ImmutableMap.Builder<String, SourceRef> bm = new ImmutableMap.Builder();
         if (selectStat.getCteList() != null) {
 
             SupportChecks.supportCheck(selectStat,
