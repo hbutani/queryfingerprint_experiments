@@ -1,10 +1,12 @@
 package org.hatke.queryfingerprint.snowflake.parse;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import gudusoft.gsqlparser.nodes.TObjectName;
 import gudusoft.gsqlparser.sqlenv.TSQLEnv;
 
 import java.util.List;
+import java.util.Optional;
 
 public class CatalogColumn implements Column {
 
@@ -47,6 +49,10 @@ public class CatalogColumn implements Column {
     @Override
     public Source getSource() {
         return table;
+    }
+
+    public Optional<Column> asCatalogColumn() {
+        return Optional.of(this);
     }
 
     @Override

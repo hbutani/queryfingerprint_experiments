@@ -14,4 +14,10 @@ public interface Source {
     TSQLEnv getSqlEnv();
 
     Iterable<Column> columns();
+
+    /**
+     *
+     * @return
+     */
+    Optional<CatalogTable> asCatalogTable();
 }

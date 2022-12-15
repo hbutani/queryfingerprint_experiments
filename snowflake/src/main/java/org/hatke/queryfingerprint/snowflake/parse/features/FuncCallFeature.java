@@ -30,12 +30,12 @@ public class FuncCallFeature extends BaseFeature {
         return ImmutableList.of(this);
     }
 
-    public Optional<String> getFuncName() {
-        return Optional.of(funcName);
+    public String getFuncName() {
+        return funcName;
     }
 
-    public Optional<FunctionClass> getFuncClass() {
-        return Optional.of(funcClass);
+    public FunctionClass getFuncClass() {
+        return funcClass;
     }
 
     public String toString() {

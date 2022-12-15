@@ -6,6 +6,9 @@ import org.hatke.queryfingerprint.model.FunctionApplication;
 import org.hatke.queryfingerprint.model.Join;
 import org.hatke.queryfingerprint.model.Predicate;
 import org.hatke.queryfingerprint.model.Queryfingerprint;
+import org.hatke.queryfingerprint.snowflake.parse.features.FuncCallFeature;
+import org.hatke.queryfingerprint.snowflake.parse.features.JoinFeature;
+import org.hatke.queryfingerprint.snowflake.parse.features.PredicateFeature;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -62,6 +65,11 @@ public class QueryfingerprintBuilder {
                 qbBuilder.merge(childFP);
             }
 
+            for(QB cteQB : qb.cteRefs()) {
+                Queryfingerprint childFP = build(cteQB);
+                qbBuilder.merge(childFP);
+            }
+
             if (qb.isTopLevel()) {
                 for(SourceRef sR : qA.ctes().values()) {
                     Source src = sR.getSource();
@@ -93,13 +101,63 @@ public class QueryfingerprintBuilder {
 
     private void addFeatures(SingleQB qb, QBBuilder qbBuilder) {
         for(Source src : qb.getFromSources()) {
-            if (src instanceof CatalogTable) {
-                qbBuilder.tablesReferenced.add(((CatalogTable) src).getFqName());
-            }
+            src.asCatalogTable().stream().forEach(c -> qbBuilder.tablesReferenced.add(c.getFqName()));
         }
 
         for(Column c : qb.getScannedColumns()) {
-            qbBuilder.columnsScanned.add(c.getFQN());
+            c.asCatalogColumn().stream().forEach(sc -> qbBuilder.columnsScanned.add(sc.getFQN()));
+        }
+
+        for(Column c : qb.getFilteredColumns()) {
+            c.asCatalogColumn().stream().forEach(sc -> qbBuilder.columnsScanned.add(sc.getFQN()));
+        }
+
+        for(FuncCallFeature fC : qb.functionApplications()) {
+            for(ColumnRef cR : fC.getColumnRefs()) {
+                cR.getColumn().asCatalogColumn().stream().forEach(sc -> {
+                    qbBuilder.functionApplications.add(new FunctionApplication(fC.getFuncName(), sc.getFQN()));
+                });
+            }
+        }
+
+        for(PredicateFeature p : qb.prunablePredicates()) {
+            for(ColumnRef cR : p.getColumnRefs()) {
+                cR.getColumn().asCatalogColumn().stream().forEach(sc -> {
+                    qbBuilder.columnsScanFiltered.add(sc.getFQN());
+
+                    Optional<FuncCallFeature> fC = p.getFuncCalls().size() == 0 ?
+                            Optional.empty() : Optional.of(p.getFuncCalls().get(0));
+
+                    qbBuilder.scanPredicates.add(
+                            new Predicate(fC.map(f -> f.getFuncName()), sc.getFQN(), p.getComparisonType().name())
+                    );
+                });
+            }
+        }
+
+        for(JoinFeature jF : qb.joins()) {
+            Optional<Column> leftCatCol = Optional.empty(), rightCatCol = Optional.empty();
+
+            for(ColumnRef cR : jF.getLeftFeature().getColumnRefs()) {
+                leftCatCol = cR.getColumn().asCatalogColumn();
+            }
+
+            for(ColumnRef cR : jF.getRightFeature().getColumnRefs()) {
+                rightCatCol = cR.getColumn().asCatalogColumn();
+            }
+
+            if (leftCatCol.isPresent() && rightCatCol.isPresent()) {
+
+                CatalogColumn leftCol = (CatalogColumn) leftCatCol.get();
+                CatalogTable leftTab = leftCol.getTable();
+                CatalogColumn rightCol = (CatalogColumn) rightCatCol.get();
+                CatalogTable rightTab = rightCol.getTable();
+
+
+                qbBuilder.joins.add(
+                        new Join(leftTab.getFqName(), rightTab.getFqName(), leftCol.getFQN(), rightCol.getFQN(), jF.getJoinType())
+                );
+            }
         }
     }
 
@@ -145,12 +203,13 @@ public class QueryfingerprintBuilder {
         Queryfingerprint build() {
             return new Queryfingerprint(
                     id,
+                    qb.getSelectStat().toString(),
                     parentId,
                     qb.getQbType(),
                     ImmutableSet.copyOf(tablesReferenced),
                     ImmutableSet.copyOf(columnsScanned),
                     ImmutableSet.copyOf(columnsFiltered),
-                    ImmutableSet.copyOf(columnsScanned),
+                    ImmutableSet.copyOf(columnsScanFiltered),
                     ImmutableSet.copyOf(predicates),
                     ImmutableSet.copyOf(scanPredicates),
                     ImmutableSet.copyOf(functionApplications),

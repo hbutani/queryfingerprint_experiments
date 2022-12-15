@@ -254,9 +254,12 @@ class SingleQB implements QB {
 
     private void addExprFeature(ExprFeature eInfo,
                                 boolean isWhereConjunct) {
-        eInfo.getColumnRefs().stream().map(crf -> blockFeatures.filteredColumns.add(crf.getColumn()));
-        eInfo.getFuncCalls().stream().map(fcf -> blockFeatures.functionApplications.add(fcf));
+        eInfo.getColumnRefs().stream().forEach(crf -> blockFeatures.accesedColumns.add(crf.getColumn()));
+        eInfo.getFuncCalls().stream().forEach(fcf -> blockFeatures.functionApplications.add(fcf));
         eInfo.getPredicate().stream().forEach(p -> {
+
+            p.getColumnRefs().stream().map(crf -> blockFeatures.filteredColumns.add(crf.getColumn()));
+
             if (isWhereConjunct) {
                 blockFeatures.prunablePredicates.add(p);
             } else {
@@ -390,6 +393,26 @@ class SingleQB implements QB {
 
     ImmutableList<Source> getFromSources() {
         return fromSources;
+    }
+
+    public ImmutableList<QB> cteRefs() {
+        ImmutableList.Builder<QB> b = new ImmutableList.Builder<>();
+
+        for(Source src : getFromSources()) {
+            if (src instanceof SourceRef) {
+                SourceRef srcRef = (SourceRef) src;
+                Source referencedSource = srcRef.getSource();
+
+                while(referencedSource instanceof SourceRef) {
+                    referencedSource = ((SourceRef)referencedSource).getSource();
+                }
+
+                if (referencedSource instanceof QB && ((QB)referencedSource).getQbType() == QBType.cte) {
+                    b.add((QB) referencedSource);
+                }
+            }
+        }
+        return b.build();
     }
 
     public int getId() {

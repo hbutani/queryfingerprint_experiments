@@ -13,6 +13,8 @@ public class Queryfingerprint implements Serializable  {
 
     private final UUID uuid;
 
+    private final String sqlText;
+
     private final Optional<UUID> parentQB;
 
     private final QBType type;
@@ -76,7 +78,8 @@ public class Queryfingerprint implements Serializable  {
     private final ImmutableSet<UUID> referencedQBlocks;
 
 
-    public Queryfingerprint(UUID uuid, Optional<UUID> parentQB, QBType type, ImmutableSet<String> tablesReferenced,
+    public Queryfingerprint(UUID uuid, String sqlText,
+                            Optional<UUID> parentQB, QBType type, ImmutableSet<String> tablesReferenced,
                             ImmutableSet<String> columnsScanned,
                             ImmutableSet<String> columnsFiltered,
                             ImmutableSet<String> columnsScanFiltered,
@@ -87,6 +90,7 @@ public class Queryfingerprint implements Serializable  {
                             ImmutableSet<String> correlatedColumns,
                             ImmutableSet<UUID> referencedQBlocks) {
         this.uuid = uuid;
+        this.sqlText = sqlText;
         this.parentQB = parentQB;
         this.type = type;
         this.tablesReferenced = tablesReferenced;
@@ -157,6 +161,7 @@ public class Queryfingerprint implements Serializable  {
     public String toString() {
         return "Queryfingerprint{" +
                 "\n  uuid=" + uuid +
+                "\n sqlText=" + sqlText +
                 Utils.optionalInfoString("\n  parentQB", parentQB) +
                 "\n  type=" + type +
                 "\n  tablesReferenced=" + tablesReferenced.stream().collect(Collectors.joining(", ", "[", "]")) +

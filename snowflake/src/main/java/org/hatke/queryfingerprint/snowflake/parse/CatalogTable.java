@@ -92,6 +92,10 @@ class CatalogTable implements Source {
         return columns;
     }
 
+    public Optional<CatalogTable> asCatalogTable() {
+        return Optional.of(this);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

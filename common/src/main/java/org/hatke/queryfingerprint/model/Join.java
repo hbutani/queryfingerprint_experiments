@@ -1,5 +1,6 @@
 package org.hatke.queryfingerprint.model;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 
 import java.io.Serializable;
@@ -10,22 +11,25 @@ public class Join implements Serializable  {
 
     private final String leftTable;
     private final String rightTable;
-    private final ImmutableList<Condition> joinConditions;
+
+    private final String leftColumn;
+
+    private final String rightColumn;
     private final JoinType type;
 
-    public Join(String leftTable, String rightTable, ImmutableList<Condition> joinConditions, JoinType type) {
+    public Join(String leftTable, String rightTable, String leftColumn, String rightColumn, JoinType type) {
 
         if (leftTable.compareTo(rightTable) > 0 && type.isFlippable()) {
-            this.leftTable = leftTable;
-            this.rightTable = rightTable;
-            this.joinConditions = ImmutableList.copyOf(
-                            joinConditions.stream().map(c -> c.flip()).collect(Collectors.toList())
-            );
+            this.leftTable = rightTable;
+            this.rightTable = leftTable;
+            this.leftColumn = rightColumn;
+            this.rightColumn = leftColumn;
             this.type = type;
         } else {
             this.leftTable = leftTable;
             this.rightTable = rightTable;
-            this.joinConditions = joinConditions;
+            this.leftColumn = leftColumn;
+            this.rightColumn = rightColumn;
             this.type = type;
         }
     }
@@ -38,36 +42,39 @@ public class Join implements Serializable  {
         return rightTable;
     }
 
-    public ImmutableList<Condition> getJoinConditions() {
-        return joinConditions;
+    public String getLeftColumn() {
+        return leftColumn;
+    }
+
+    public String getRightColumn() {
+        return rightColumn;
     }
 
     public JoinType getType() {
         return type;
     }
 
-    public static final class Condition implements Serializable {
-        private static final long serialVersionUID = 1382946828217636364L;
-
-        private final String leftColumn;
-        private final String rightColumn;
-
-        public Condition(String left, String right) {
-            this.leftColumn = left;
-            this.rightColumn = right;
-        }
-
-        public String getLeftColumn() {
-            return leftColumn;
-        }
-
-        public String getRightColumn() {
-            return rightColumn;
-        }
-
-        Condition flip() {
-            return new Condition(rightColumn, leftColumn);
-        }
+    @Override
+    public String toString() {
+        return "Join{" +
+                "leftTable='" + leftTable + '\'' +
+                ", rightTable='" + rightTable + '\'' +
+                ", leftColumn='" + leftColumn + '\'' +
+                ", rightColumn='" + rightColumn + '\'' +
+                ", type=" + type +
+                '}';
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Join)) return false;
+        Join join = (Join) o;
+        return Objects.equal(getLeftTable(), join.getLeftTable()) && Objects.equal(getRightTable(), join.getRightTable()) && Objects.equal(getLeftColumn(), join.getLeftColumn()) && Objects.equal(getRightColumn(), join.getRightColumn()) && getType() == join.getType();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(getLeftTable(), getRightTable(), getLeftColumn(), getRightColumn(), getType());
+    }
 }

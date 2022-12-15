@@ -1,9 +1,11 @@
 package org.hatke.queryfingerprint.snowflake.parse;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import gudusoft.gsqlparser.util.SQLUtil;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class SourceRefColumn implements Column {
@@ -46,6 +48,10 @@ public class SourceRefColumn implements Column {
     @Override
     public Source getSource() {
         return srcRef;
+    }
+
+    public Optional<Column> asCatalogColumn() {
+        return sourceColumn.asCatalogColumn();
     }
 
     public Column getSourceColumn() {

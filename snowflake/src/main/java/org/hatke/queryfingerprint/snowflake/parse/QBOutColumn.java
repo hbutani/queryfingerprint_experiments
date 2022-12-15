@@ -4,6 +4,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Represents a column of a {@link QB}. We capture 2 features of this column:
@@ -49,6 +50,10 @@ public class QBOutColumn implements Column {
     @Override
     public Source getSource() {
         return qb;
+    }
+
+    public Optional<Column> asCatalogColumn() {
+        return inputColumn.flatMap(c -> c.asCatalogColumn());
     }
 
     public Optional<QB> appearsInQB() {

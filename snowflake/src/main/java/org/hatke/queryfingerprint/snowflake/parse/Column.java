@@ -1,5 +1,7 @@
 package org.hatke.queryfingerprint.snowflake.parse;
 
+import com.google.common.collect.ImmutableList;
+
 import java.util.Optional;
 
 public interface Column extends ColumnRef {
@@ -27,7 +29,12 @@ public interface Column extends ColumnRef {
     default boolean isCorrelated() {
         return false;
     }
-    
+
+
+    /**
+     * @return if this is a {@link CatalogColumn} return it.
+     */
+    Optional<Column> asCatalogColumn();
 
     class CorrelateColRef implements ColumnRef {
         private final Column parentCol;

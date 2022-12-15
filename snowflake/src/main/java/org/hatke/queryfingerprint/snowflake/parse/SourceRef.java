@@ -100,6 +100,10 @@ class SourceRef implements Source {
         return columns;
     }
 
+    public Optional<CatalogTable> asCatalogTable() {
+        return source.asCatalogTable();
+    }
+
     public Source getInSource() {
         return inSource;
     }

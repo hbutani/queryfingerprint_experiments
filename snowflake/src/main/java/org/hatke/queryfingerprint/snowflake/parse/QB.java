@@ -24,11 +24,17 @@ public interface QB extends Source {
 
     ImmutableList<QB> childQBs();
 
+    ImmutableList<QB> cteRefs();
+
     Optional<SQLClauseType> getParentClause();
 
     Optional<ColumnRef> resolveInputColumn(TObjectName objName);
 
     void addCorrelatedJoinFeature(CorrelateJoinFeature cF);
+
+    default Optional<CatalogTable> asCatalogTable() {
+        return Optional.empty();
+    }
 
     static QB create(QueryAnalysis qA, boolean isTopLevel, QBType qbType, TSelectSqlStatement pTree,
                      Optional<QB> parentQB, Optional<SQLClauseType> parentClause) {

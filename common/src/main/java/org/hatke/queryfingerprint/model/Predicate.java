@@ -1,5 +1,7 @@
 package org.hatke.queryfingerprint.model;
 
+import com.google.common.base.Objects;
+
 import java.io.Serializable;
 import java.util.Optional;
 
@@ -37,5 +39,18 @@ public class Predicate implements Serializable {
                 ", column='" + column + '\'' +
                 ", operator='" + operator + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Predicate)) return false;
+        Predicate predicate = (Predicate) o;
+        return Objects.equal(getFunctionName(), predicate.getFunctionName()) && Objects.equal(getColumn(), predicate.getColumn()) && Objects.equal(getOperator(), predicate.getOperator());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(getFunctionName(), getColumn(), getOperator());
     }
 }
