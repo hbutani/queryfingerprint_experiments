@@ -78,7 +78,9 @@ public class QueryAnalysisTest {
 
         // subQueryInWhere();
 
-        cte_ref_in_cte();
+        // cte_ref_in_cte();
+
+        // q6_subquery();
     }
 
     private static void exprAnalysis() {
@@ -119,6 +121,20 @@ public class QueryAnalysisTest {
                 "SELECT * FROM CT2";
 
         QueryAnalysis qA = new QueryAnalysis(sqlEnv, q1);
+        Show.show(qA, System.out);
+        System.out.println("-------------------------------------------------------------------------------");
+        TestUtils.showFingerPrints(qA);
+    }
+
+    private static void q6_subquery() {
+        String q = "select distinct (d_month_seq) " +
+                " from date_dim " +
+                " where d_year = 2001 " +
+                "   and d_moy = 1";
+
+        q = TPCDSQueries.q6;
+
+        QueryAnalysis qA = new QueryAnalysis(sqlEnv, q);
         Show.show(qA, System.out);
         System.out.println("-------------------------------------------------------------------------------");
         TestUtils.showFingerPrints(qA);

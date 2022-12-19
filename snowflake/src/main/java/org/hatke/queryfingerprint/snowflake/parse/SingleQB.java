@@ -198,30 +198,30 @@ class SingleQB implements QB {
         Map<String, Column> sourceColumnMap = new HashMap<>();
         Set<String> ambiguousColNames = new HashSet<>();
 
-        BiFunction<Column, Function<Column, String>, Void> addCol = (col, fn) -> {
+        Function<Column, Void>  addCol2 = col -> {
 
-            String nm = fn.apply(col);
-            if (!ambiguousColNames.contains(nm)) {
-                Column eCol = sourceColumnMap.remove(nm);
-                if (eCol != null) {
-                    ambiguousColNames.add(nm);
-                } else {
-                    sourceColumnMap.put(nm, col);
-                }
+            String nm = col.getName();
+
+            sourceColumnMap.put(col.getFQN(), col);
+
+            if (sourceColumnMap.containsKey(nm)) {
+                ambiguousColNames.add(nm);
+            } else {
+                sourceColumnMap.put(nm, col);
             }
+
             return null;
         };
 
 
         for(Source s : fromSources) {
             for(Column c : s.columns()) {
-                // not checking if name is present in the ParentQB
-                // so as a defensive move assuming it can be ambiguous.
-                if (!parentQB.isPresent()) {
-                    addCol.apply(c, Column::getName);
-                }
-                addCol.apply(c, Column::getFQN);
+                addCol2.apply(c);
             }
+        }
+
+        for(String amCol : ambiguousColNames) {
+            sourceColumnMap.remove(amCol);
         }
 
         unambiguousSourceColMap = ImmutableMap.copyOf(sourceColumnMap);
