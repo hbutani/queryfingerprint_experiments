@@ -126,7 +126,7 @@ class SingleQB implements QB {
     }
 
     private void buildCTEs() {
-        ImmutableMap.Builder<String, SourceRef> bm = new ImmutableMap.Builder();
+
         if (selectStat.getCteList() != null) {
 
             SupportChecks.supportCheck(selectStat,
@@ -140,11 +140,9 @@ class SingleQB implements QB {
                 TObjectName cteName = cte.getTableName();
                 Source src = QB.create(qA, false, QBType.cte, cteSelect,
                         Optional.empty(), Optional.empty());
-                SourceRef srcRef = new SourceRef(qA, this, src, cteName.toString()); // TODO normalize CTENAME
-                bm.put(srcRef.alias.get(), srcRef);
-                bm.put(srcRef.fqAlias.get(), srcRef);
+                SourceRef srcRef = new SourceRef(qA, this, src, cteName.toString());
+                qA.addCTE(srcRef);
             }
-            qA.setCTEMap(bm.build());
         }
 
     }

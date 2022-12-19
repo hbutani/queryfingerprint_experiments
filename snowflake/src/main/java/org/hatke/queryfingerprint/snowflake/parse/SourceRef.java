@@ -26,7 +26,8 @@ class SourceRef implements Source {
 
     public SourceRef(QueryAnalysis qA,
                      Source inSource,
-                     Source source, String alias) {
+                     Source source,
+                     String alias) {
         this.id = qA.nextId();
         this.inSource = inSource;
         this.source = source;

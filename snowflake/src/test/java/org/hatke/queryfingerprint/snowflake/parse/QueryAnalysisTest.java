@@ -77,6 +77,8 @@ public class QueryAnalysisTest {
         // exprFuncApply();
 
         // subQueryInWhere();
+
+        cte_ref_in_cte();
     }
 
     private static void exprAnalysis() {
@@ -109,5 +111,16 @@ public class QueryAnalysisTest {
         Show.show(tpcdsQA, System.out);
 
         // FingerPrintUtils.printTree(q1);
+    }
+
+    private static void cte_ref_in_cte() {
+        String q1 = "WITH CT1 AS (SELECT * FROM T), " +
+                "     CT2 AS (SELECT * FROM CT1) " +
+                "SELECT * FROM CT2";
+
+        QueryAnalysis qA = new QueryAnalysis(sqlEnv, q1);
+        Show.show(qA, System.out);
+        System.out.println("-------------------------------------------------------------------------------");
+        TestUtils.showFingerPrints(qA);
     }
 }

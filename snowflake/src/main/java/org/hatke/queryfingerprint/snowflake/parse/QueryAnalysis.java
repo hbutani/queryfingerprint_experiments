@@ -6,6 +6,8 @@ import gudusoft.gsqlparser.sqlenv.TSQLEnv;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
 import org.hatke.queryfingerprint.model.QBType;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 public class QueryAnalysis {
@@ -62,7 +64,7 @@ public class QueryAnalysis {
 
     private final QB topLevelQB;
 
-    private ImmutableMap<String, SourceRef> cteMap = ImmutableMap.of();
+    private Map<String, SourceRef> cteMap = new HashMap<>();
 
     int nextId() {
         return idGen++;
@@ -72,8 +74,9 @@ public class QueryAnalysis {
         return sqlEnv;
     }
 
-    void setCTEMap(ImmutableMap<String, SourceRef> cteMap) {
-        this.cteMap = cteMap;
+    void addCTE(SourceRef srcRef) {
+        this.cteMap.put(srcRef.alias.get(), srcRef);
+        this.cteMap.put(srcRef.fqAlias.get(), srcRef);
     }
 
     Source getCTE(String fqn) {
@@ -81,7 +84,7 @@ public class QueryAnalysis {
     }
 
     ImmutableMap<String, SourceRef> ctes() {
-        return cteMap;
+        return ImmutableMap.copyOf(cteMap);
     }
 
     QB getTopLevelQB() {
