@@ -80,7 +80,7 @@ public class QueryAnalysisTest {
 
         // cte_ref_in_cte();
 
-        // q6_subquery();
+        // correlate_sq();
     }
 
     private static void exprAnalysis() {
@@ -126,13 +126,9 @@ public class QueryAnalysisTest {
         TestUtils.showFingerPrints(qA);
     }
 
-    private static void q6_subquery() {
-        String q = "select distinct (d_month_seq) " +
-                " from date_dim " +
-                " where d_year = 2001 " +
-                "   and d_moy = 1";
+    private static void correlate_sq() {
+        String q = "select a from R where exists (select b from T where b = R.a)";
 
-        q = TPCDSQueries.q6;
 
         QueryAnalysis qA = new QueryAnalysis(sqlEnv, q);
         Show.show(qA, System.out);

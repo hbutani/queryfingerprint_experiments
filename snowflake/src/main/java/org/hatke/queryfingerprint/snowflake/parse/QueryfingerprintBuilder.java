@@ -4,8 +4,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.hatke.queryfingerprint.model.FunctionApplication;
 import org.hatke.queryfingerprint.model.Join;
+import org.hatke.queryfingerprint.model.JoinType;
 import org.hatke.queryfingerprint.model.Predicate;
 import org.hatke.queryfingerprint.model.Queryfingerprint;
+import org.hatke.queryfingerprint.snowflake.parse.features.CorrelateJoinFeature;
 import org.hatke.queryfingerprint.snowflake.parse.features.FuncCallFeature;
 import org.hatke.queryfingerprint.snowflake.parse.features.JoinFeature;
 import org.hatke.queryfingerprint.snowflake.parse.features.PredicateFeature;
@@ -99,6 +101,24 @@ public class QueryfingerprintBuilder {
         return qbBuilder;
     }
 
+    private void addJoinFeature(Optional<Column> leftCatCol,
+                                Optional<Column> rightCatCol,
+                                JoinType joinType,
+                                QBBuilder qbBuilder) {
+        if (leftCatCol.isPresent() && rightCatCol.isPresent()) {
+
+            CatalogColumn leftCol = (CatalogColumn) leftCatCol.get();
+            CatalogTable leftTab = leftCol.getTable();
+            CatalogColumn rightCol = (CatalogColumn) rightCatCol.get();
+            CatalogTable rightTab = rightCol.getTable();
+
+
+            qbBuilder.joins.add(
+                    new Join(leftTab.getFqName(), rightTab.getFqName(), leftCol.getFQN(), rightCol.getFQN(), joinType)
+            );
+        }
+    }
+
     private void addFeatures(SingleQB qb, QBBuilder qbBuilder) {
         for(Source src : qb.getFromSources()) {
             src.asCatalogTable().stream().forEach(c -> qbBuilder.tablesReferenced.add(c.getFqName()));
@@ -136,6 +156,7 @@ public class QueryfingerprintBuilder {
         }
 
         for(JoinFeature jF : qb.joins()) {
+
             Optional<Column> leftCatCol = Optional.empty(), rightCatCol = Optional.empty();
 
             for(ColumnRef cR : jF.getLeftFeature().getColumnRefs()) {
@@ -146,18 +167,16 @@ public class QueryfingerprintBuilder {
                 rightCatCol = cR.getColumn().asCatalogColumn();
             }
 
-            if (leftCatCol.isPresent() && rightCatCol.isPresent()) {
+            addJoinFeature(leftCatCol, rightCatCol, jF.getJoinType(), qbBuilder);
+        }
 
-                CatalogColumn leftCol = (CatalogColumn) leftCatCol.get();
-                CatalogTable leftTab = leftCol.getTable();
-                CatalogColumn rightCol = (CatalogColumn) rightCatCol.get();
-                CatalogTable rightTab = rightCol.getTable();
+        for(CorrelateJoinFeature cJF : qb.correlatedJoins()) {
+            addJoinFeature(cJF.getColRef().getColumn().asCatalogColumn(),
+                    cJF.getChildColRef().getColumn().asCatalogColumn(), JoinType.inner, qbBuilder);
+        }
 
-
-                qbBuilder.joins.add(
-                        new Join(leftTab.getFqName(), rightTab.getFqName(), leftCol.getFQN(), rightCol.getFQN(), jF.getJoinType())
-                );
-            }
+        for(Column c : qb.columnsFromParent()) {
+            c.asCatalogColumn().stream().forEach(sc -> qbBuilder.correlatedColumns.add(sc.getFQN()));
         }
     }
 
@@ -195,7 +214,6 @@ public class QueryfingerprintBuilder {
             scanPredicates.addAll(childFP.getScanPredicates());
             functionApplications.addAll(childFP.getFunctionApplications());
             joins.addAll(childFP.getJoins());
-            correlatedColumns.addAll(childFP.getCorrelatedColumns());
             referencedQBlocks.add(childFP.getUuid());
             referencedQBlocks.addAll(childFP.getReferencedQBlocks());
         }

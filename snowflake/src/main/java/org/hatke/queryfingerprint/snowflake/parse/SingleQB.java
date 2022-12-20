@@ -24,6 +24,7 @@ import org.hatke.queryfingerprint.snowflake.parse.features.FuncCallFeature;
 import org.hatke.queryfingerprint.snowflake.parse.features.JoinFeature;
 import org.hatke.queryfingerprint.snowflake.parse.features.PredicateFeature;
 import org.hatke.utils.Pair;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,11 +34,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 class SingleQB implements QB {
+
+    static final Logger LOGGER = Utils.getLogger();
 
     private final QueryAnalysis qA;
 
@@ -250,9 +253,21 @@ class SingleQB implements QB {
         return unambiguousSourceColMap;
     }
 
+    public void addFeature(Consumer<Features> c) {
+        c.accept(blockFeatures);
+    }
+
     private void addExprFeature(ExprFeature eInfo,
                                 boolean isWhereConjunct) {
-        eInfo.getColumnRefs().stream().forEach(crf -> blockFeatures.accesedColumns.add(crf.getColumn()));
+        eInfo.getColumnRefs().stream().forEach(crf -> {
+            if (!crf.isCorrelated()) {
+                blockFeatures.accesedColumns.add(crf.getColumn());
+            } else {
+                blockFeatures.columnsFromParent.add(crf.getColumn());
+                parentQB.get().addFeature(blockFeatures -> blockFeatures.accesedColumns.add(crf.getColumn()));
+            }
+        }
+        );
         eInfo.getFuncCalls().stream().forEach(fcf -> blockFeatures.functionApplications.add(fcf));
         eInfo.getPredicate().stream().forEach(p -> {
 
@@ -282,7 +297,10 @@ class SingleQB implements QB {
     }
 
     private void buildSubqueriesInWhere(TExpression whereCond) {
-        ImmutableSet<TExpression> subqueries = FindExpressionsByType.findSubqueries(whereCond);
+        Set<TExpression> subqueries = FindExpressionsByType.findSubqueries(whereCond);
+
+        LOGGER.info(TreeDump.dump(whereCond));
+
         for(TExpression subE : subqueries) {
             QB subQB = QB.create(qA, false, QBType.sub_query, subE.getSubQuery(),
                     Optional.of(this), Optional.of(SQLClauseType.where));
@@ -476,6 +494,10 @@ class SingleQB implements QB {
         return blockFeatures.correlateJoins.build();
     }
 
+    public ImmutableList<Column> columnsFromParent() {
+        return blockFeatures.columnsFromParent.build();
+    }
+
     public void addCorrelatedJoinFeature(CorrelateJoinFeature cF) {
         assert(cF.getColRef().appearsInQB().get() == this);
         blockFeatures.correlateJoins.add(cF);
@@ -492,24 +514,5 @@ class SingleQB implements QB {
     @Override
     public int hashCode() {
         return Objects.hashCode(getId());
-    }
-
-    class Features {
-
-        private ImmutableList.Builder<Column> accesedColumns = new ImmutableList.Builder<>();
-        private ImmutableList.Builder<FuncCallFeature> functionApplications = new ImmutableList.Builder<>();
-
-        private ImmutableList.Builder<Column> filteredColumns = new ImmutableList.Builder<>();
-
-        /**
-         * execution plan for this predicate can be potentially influenced by the physical layout of the table.
-         */
-        private ImmutableList.Builder<PredicateFeature> prunablePredicates = new ImmutableList.Builder<>();
-
-        private ImmutableList.Builder<PredicateFeature> otherPredicates = new ImmutableList.Builder<>();
-
-        private ImmutableList.Builder<JoinFeature> joins = new ImmutableList.Builder<>();
-
-        private ImmutableList.Builder<CorrelateJoinFeature> correlateJoins = new ImmutableList.Builder<>();
     }
 }

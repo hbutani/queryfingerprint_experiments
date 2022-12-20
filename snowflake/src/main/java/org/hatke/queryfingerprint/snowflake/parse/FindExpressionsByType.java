@@ -1,7 +1,6 @@
 package org.hatke.queryfingerprint.snowflake.parse;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import gudusoft.gsqlparser.EExpressionType;
 import gudusoft.gsqlparser.nodes.IExpressionVisitor;
 import gudusoft.gsqlparser.nodes.TExpression;
@@ -35,10 +34,19 @@ class FindExpressionsByType implements IExpressionVisitor  {
         return true;
     }
 
-    static ImmutableSet<TExpression> findSubqueries(TExpression expr) {
-        FindExpressionsByType f = new FindExpressionsByType(ImmutableList.of(EExpressionType.subquery_t));
+    static Set<TExpression> findSubqueries(TExpression expr) {
+        FindExpressionsByType f = new FindExpressionsByType(
+                ImmutableList.of(EExpressionType.subquery_t,
+                        EExpressionType.exists_t)
+        );
         expr.preOrderTraverse(f);
 
-        return ImmutableSet.copyOf(f.exprMap.get(EExpressionType.subquery_t));
+        Set<TExpression> r = new HashSet<>();
+        for(Set<TExpression> s : f.exprMap.values()) {
+            r.addAll(s);
+        }
+
+
+        return r;
     }
 }

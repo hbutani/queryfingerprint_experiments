@@ -622,17 +622,13 @@ import gudusoft.gsqlparser.stmt.vertica.TVerticaCreateFunction;
 import gudusoft.gsqlparser.stmt.vertica.TVerticaSetStmt;
 import gudusoft.gsqlparser.stmt.vertica.TVerticaShow;
 
-import java.util.Arrays;
-
 public class TreeDump extends TParseTreeVisitor {
 
-//    private static ImmutableMap<Integer, EExpressionType> exprTypeMap() {
-//        ImmutableMap.Builder<Integer, EExpressionType> b = new ImmutableMap.Builder<>();
-//        for(EExpressionType et : EExpressionType.values()) {
-//
-//        }
-//            return null;
-//    }
+    public static String dump(TParseTreeNode parseNode) {
+        TreeDump td = new TreeDump();
+        parseNode.acceptChildren(td);
+        return td.getTreeString();
+    }
 
     private int indent = 0;
     private StringBuffer buf = new StringBuffer();
