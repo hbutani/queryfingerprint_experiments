@@ -10,6 +10,7 @@ import gudusoft.gsqlparser.nodes.TObjectName;
 import gudusoft.gsqlparser.sqlenv.ESQLDataObjectType;
 import org.hatke.queryfingerprint.model.JoinType;
 import org.hatke.queryfingerprint.snowflake.parse.Column;
+import org.hatke.queryfingerprint.snowflake.parse.enums.EComparisonOperatorType;
 import org.hatke.utils.Pair;
 import org.hatke.queryfingerprint.snowflake.parse.ColumnRef;
 import org.hatke.queryfingerprint.snowflake.parse.QB;
@@ -67,9 +68,9 @@ public interface ExprFeature {
 
     static ExprFeature combineIntoPredOrJoin(QB qb,
                                              ExprFeature leftFeature,
-                                            TExpression expr,
-                                            EComparisonType compOp,
-                                            ExprFeature rightFeature) {
+                                             TExpression expr,
+                                             EComparisonOperatorType compOp,
+                                             ExprFeature rightFeature) {
 
         if (leftFeature == null || rightFeature == null) {
             return null;
@@ -80,7 +81,7 @@ public interface ExprFeature {
         } else if (rightFeature.isSingleColumn() && leftFeature.getExprKind() == ExprKind.constant) {
             return new PredicateFeature(expr, rightFeature, flipCompOp(compOp), (ConstantFeature) leftFeature);
         } else if (leftFeature.isSingleColumn() && rightFeature.isSingleColumn() &&
-                compOp == EComparisonType.equals) {
+                compOp == EComparisonOperatorType.equals) {
             ColumnRef lColRef = leftFeature.getColumnRefs().get(0);
             ColumnRef rColRef = rightFeature.getColumnRefs().get(0);
 
@@ -123,16 +124,16 @@ public interface ExprFeature {
 
     static Function<Predicate<Void>, Boolean> check = (pred) -> pred.test(null);
 
-    static EComparisonType flipCompOp(EComparisonType compOp) {
+    static EComparisonOperatorType flipCompOp(EComparisonOperatorType compOp) {
         switch (compOp) {
             case greaterThan:
-                return EComparisonType.lessThan;
+                return EComparisonOperatorType.lessThan;
             case lessThan:
-                return EComparisonType.greaterThan;
+                return EComparisonOperatorType.greaterThan;
             case greaterThanOrEqualTo:
-                return EComparisonType.lessThanOrEqualTo;
+                return EComparisonOperatorType.lessThanOrEqualTo;
             case lessThanOrEqualTo:
-                return EComparisonType.greaterThanOrEqualTo;
+                return EComparisonOperatorType.greaterThanOrEqualTo;
             default:
                 return compOp;
         }
@@ -166,9 +167,58 @@ public interface ExprFeature {
         ExprFeature leftFeature = match(leftOperand, qb);
         ExprFeature rightFeature = match(rightOperand, qb);
 
-        return combineIntoPredOrJoin(qb, leftFeature, expr, expr.getComparisonType(), rightFeature);
+        return combineIntoPredOrJoin(qb, leftFeature, expr,EComparisonOperatorType.from(expr.getComparisonType()), rightFeature);
 
     }
+
+    static ExprFeature matchInPredicate(TExpression expr, QB qb) {
+        boolean validExpr = true;
+
+        validExpr = validExpr &&
+                check.apply(v -> expr.getExpressionType() == EExpressionType.in_t);
+        if (!validExpr) {
+            return null;
+        }
+
+        TExpression leftOperand = expr.getLeftOperand();
+        TExpression rightOperand = expr.getRightOperand();
+
+        validExpr = validExpr &&
+                check.apply(v -> leftOperand != null && rightOperand != null);
+        if (!validExpr) {
+            return null;
+        }
+
+        ExprFeature leftFeature = match(leftOperand, qb);
+
+        return new PredicateFeature(expr, leftFeature, EComparisonOperatorType.in, new ConstantFeature(rightOperand, rightOperand.getCompactString()));
+
+    }
+
+//    static ExprFeature matchBetweenPredicate(TExpression expr, QB qb) {
+//        boolean validExpr = true;
+//
+//        validExpr = validExpr &&
+//                check.apply(v -> expr.getExpressionType() == EExpressionType.between_t);
+//        if (!validExpr) {
+//            return null;
+//        }
+//
+//        TExpression betweenOperand = expr.getBetweenOperand();
+//        TExpression rightOperand = expr.getRightOperand();
+//        TExpression leftOperand = expr.getLeftOperand();
+//
+//        validExpr = validExpr &&
+//                check.apply(v  -> betweenOperand != null && betweenOperand != null);
+//        if (!validExpr) {
+//            return null;
+//        }
+//
+//        ExprFeature betweenFeature = match(betweenOperand, qb);
+//
+//        return new PredicateFeature(expr, betweenFeature, EComparisonOperatorType.between, new ConstantFeature(rightOperand, rightOperand.getCompactString()));
+//    }
+
 
     static ExprFeature matchConstant(TExpression expr, QB qb) {
 
@@ -222,6 +272,8 @@ public interface ExprFeature {
         eF = eF == null ? matchFunctionApply(expr, qb) : eF;
         eF = eF == null ? matchColumn(expr, qb) : eF;
         eF = eF == null ? matchConstant(expr, qb) : eF;
+        eF = eF == null ? matchInPredicate(expr, qb) : eF;
+//        eF = eF == null ? matchBetweenPredicate(expr, qb) : eF;
 
         return eF;
     }

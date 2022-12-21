@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableList;
 import gudusoft.gsqlparser.EDbVendor;
 import gudusoft.gsqlparser.sqlenv.TSQLEnv;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
-import io.ad.parse.tpcds.utils.FingerPrintUtils;
 
 public class QueryAnalysisTest {
     private static String basic_1 =
@@ -54,21 +53,21 @@ public class QueryAnalysisTest {
 
     public static void main(String[] args) {
 
-        ImmutableList<String> queries = ImmutableList.of(
-                TPCDSQueries.q1,
-                // TPCDSQueries.q2,
-                TPCDSQueries.q3,
-                TPCDSQueries.q6,
-                TPCDSQueries.q9
-                // TPCDSQueries.q10
-        );
-
-        for(String q : queries) {
-            QueryAnalysis qA = new QueryAnalysis(sqlEnv, q);
-            Show.show(qA, System.out);
-            System.out.println("-------------------------------------------------------------------------------");
-            TestUtils.showFingerPrints(qA);
-        }
+//        ImmutableList<String> queries = ImmutableList.of(
+//                TPCDSQueries.q1,
+//                // TPCDSQueries.q2,
+//                TPCDSQueries.q3,
+//                TPCDSQueries.q6,
+//                TPCDSQueries.q9
+//                // TPCDSQueries.q10
+//        );
+//
+//        for(String q : queries) {
+//            QueryAnalysis qA = new QueryAnalysis(sqlEnv, q);
+//            Show.show(qA, System.out);
+//            System.out.println("-------------------------------------------------------------------------------");
+//            TestUtils.showFingerPrints(qA);
+//        }
 
 //        showExpressionTrees(tpcdsQA.getTopLevelQB().getSelectStat());
 
@@ -81,6 +80,10 @@ public class QueryAnalysisTest {
         // cte_ref_in_cte();
 
         // correlate_sq();
+
+//        matchInWhere();
+
+        matchBetween();
     }
 
     private static void exprAnalysis() {
@@ -135,4 +138,27 @@ public class QueryAnalysisTest {
         System.out.println("-------------------------------------------------------------------------------");
         TestUtils.showFingerPrints(qA);
     }
+
+    private static void matchInWhere() {
+        String q1 =
+                "select  ss_sales_price \n" +
+                        "from stores_sales ss\n" +
+                        "where ss.ss_sales_price in (1,2,3)\n";
+
+        QueryAnalysis qA = new QueryAnalysis(sqlEnv, q1);
+        Show.show(qA, System.out);
+        TestUtils.showFingerPrints(qA);
+    }
+
+    private static void matchBetween() {
+        String q1 =
+                "select  ss_sales_price \n" +
+                        "from stores_sales ss\n" +
+                        "where ss.ss_sales_price BETWEEN 2 AND 5\n";
+
+        QueryAnalysis qA = new QueryAnalysis(sqlEnv, q1);
+        Show.show(qA, System.out);
+        TestUtils.showFingerPrints(qA);
+    }
+
 }

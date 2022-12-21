@@ -4,17 +4,18 @@ import com.google.common.collect.ImmutableList;
 import gudusoft.gsqlparser.EComparisonType;
 import gudusoft.gsqlparser.nodes.TExpression;
 import org.hatke.queryfingerprint.snowflake.parse.ColumnRef;
+import org.hatke.queryfingerprint.snowflake.parse.enums.EComparisonOperatorType;
 
 import java.util.Optional;
 
 public class PredicateFeature extends BaseFeature {
 
     private final ExprFeature colFeature;
-    private final EComparisonType comparisonType;
+    private final EComparisonOperatorType comparisonType;
     private final ConstantFeature valueFeature;
 
     public PredicateFeature(TExpression expr, ExprFeature colFeature,
-                            EComparisonType comparisonType, ConstantFeature valueFeature) {
+                            EComparisonOperatorType comparisonType, ConstantFeature valueFeature) {
         super(expr, ExprKind.predicate);
         this.colFeature = colFeature;
         this.comparisonType = comparisonType;
@@ -29,7 +30,7 @@ public class PredicateFeature extends BaseFeature {
         return colFeature.getFuncCalls();
     }
 
-    public EComparisonType getComparisonType() {
+    public EComparisonOperatorType getComparisonType() {
         return comparisonType;
     }
 
