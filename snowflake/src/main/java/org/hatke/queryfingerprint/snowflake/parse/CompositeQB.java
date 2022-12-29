@@ -11,6 +11,8 @@ import org.hatke.queryfingerprint.snowflake.parse.features.CorrelateJoinFeature;
 
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CompositeQB implements QB {
 
@@ -75,7 +77,7 @@ public class CompositeQB implements QB {
 
         for (int i = 0; i < statements.size(); i++) {
             if (statements.get(i) instanceof TSelectSqlStatement) {
-                new SingleQB(qA, false, QBType.regular, (TSelectSqlStatement) statements.get(i), Optional.of(this), parentClause);
+                new SingleQB(qA, false, QBType.sub_query, (TSelectSqlStatement) statements.get(i), Optional.of(this), parentClause);
             }
         }
 
@@ -118,12 +120,13 @@ public class CompositeQB implements QB {
 
     @Override
     public ImmutableList<QB> cteRefs() {
-        return childQBs.build().get(0).cteRefs();
+        Stream<QB> cteStream = childQBs.build().stream().flatMap(cqb -> cqb.cteRefs().stream());
+        return cteStream.collect(ImmutableList.toImmutableList());
     }
 
     @Override
     public Optional<SQLClauseType> getParentClause() {
-        return Optional.empty();
+        return this.parentClause;
     }
 
     @Override
@@ -138,7 +141,7 @@ public class CompositeQB implements QB {
 
     @Override
     public Optional<CatalogTable> asCatalogTable() {
-        return QB.super.asCatalogTable();
+        return Optional.empty();
     }
 
     @Override
