@@ -5,6 +5,8 @@ import gudusoft.gsqlparser.EDbVendor;
 import gudusoft.gsqlparser.sqlenv.TSQLEnv;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
 
+import static org.hatke.queryfingerprint.snowflake.parse.TPCDSQueries.q2;
+
 public class QueryAnalysisTest {
     private static String basic_1 =
             "select d_date_sk, d.d_month_seq from date_dim d where d_year =2001 and d_month_seq = 2";
@@ -83,7 +85,8 @@ public class QueryAnalysisTest {
 
 //        matchInWhere();
 
-        matchBetween();
+//        matchBetween();
+        compositeQuery();
     }
 
     private static void exprAnalysis() {
@@ -107,10 +110,10 @@ public class QueryAnalysisTest {
     private static void subQueryInWhere() {
         String q1 =
                 "select  ss_sales_price \n" +
-                "from stores_sales ss\n" +
-                "where ss.ss_sales_price > (select avg(ss_sales_price)*1.2\n" +
-                "from stores_sales ss2\n" +
-                "where ss.ss_store_sk = ss2.ss_store_sk)\n";
+                        "from stores_sales ss\n" +
+                        "where ss.ss_sales_price > (select avg(ss_sales_price)*1.2\n" +
+                        "from stores_sales ss2\n" +
+                        "where ss.ss_store_sk = ss2.ss_store_sk)\n";
 
         QueryAnalysis tpcdsQA = new QueryAnalysis(sqlEnv, q1);
         Show.show(tpcdsQA, System.out);
@@ -157,6 +160,15 @@ public class QueryAnalysisTest {
                         "where ss.ss_sales_price BETWEEN 2 AND 5\n";
 
         QueryAnalysis qA = new QueryAnalysis(sqlEnv, q1);
+        Show.show(qA, System.out);
+        TestUtils.showFingerPrints(qA);
+    }
+
+    private static void compositeQuery() {
+        String q1 = "(select d_date_sk, d_month_seq from date_dim where d_year =2001 ) " +
+                "union all (select d_date_sk, d_month_seq from date_dim where d_month_seq = 2)";
+
+        QueryAnalysis qA = new QueryAnalysis(sqlEnv, q2);
         Show.show(qA, System.out);
         TestUtils.showFingerPrints(qA);
     }

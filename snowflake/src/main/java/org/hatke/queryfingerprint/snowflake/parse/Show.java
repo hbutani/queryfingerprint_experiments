@@ -11,34 +11,33 @@ import java.util.stream.Collectors;
 
 public class Show {
 
-    static <T>  void show(PrintStream out,
-                   ImmutableCollection<T> collection,
-                   ImmutableList<String> columnHeaders,
-                   Function<T, String>... getters
-                   ) {
+    static <T> void show(PrintStream out,
+                         ImmutableCollection<T> collection,
+                         ImmutableList<String> columnHeaders,
+                         Function<T, String>... getters
+    ) {
         int numCols = columnHeaders.size();
         assert getters.length == numCols;
         int[] colSizes = new int[numCols];
         String[] colHeadersArr = columnHeaders.toArray(new String[columnHeaders.size()]);
 
-        for(int i=0; i < numCols; i++) {
+        for (int i = 0; i < numCols; i++) {
             colSizes[i] = colHeadersArr[i].length();
         }
 
-        for(T elem : collection) {
-            for(int i=0; i < numCols; i++) {
+        for (T elem : collection) {
+            for (int i = 0; i < numCols; i++) {
                 colSizes[i] = Math.max(colSizes[i], getters[i].apply(elem).length());
             }
         }
 
 
-
         StringBuilder fmtBldr = new StringBuilder();
-        for(int i=0; i < numCols; i++) {
+        for (int i = 0; i < numCols; i++) {
             if (i > 0) {
                 fmtBldr.append(" | ");
             }
-            fmtBldr.append("%").append(i+1).append("$").append(colSizes[i]).append("s");
+            fmtBldr.append("%").append(i + 1).append("$").append(colSizes[i]).append("s");
         }
         fmtBldr.append(" \n");
         String fmt = fmtBldr.toString();
@@ -46,23 +45,24 @@ public class Show {
         out.format(fmt, (Object[]) colHeadersArr);
 
         int lineSz = 0;
-        for(int i=0; i < numCols; i++) {
+        for (int i = 0; i < numCols; i++) {
             lineSz += colSizes[i];
         }
         lineSz += (3 * colSizes.length - 1);
         out.println("-".repeat(lineSz));
 
         String[] values = new String[numCols];
-        for(T elem : collection) {
-            for(int i=0; i < numCols; i++) {
+        for (T elem : collection) {
+            for (int i = 0; i < numCols; i++) {
                 values[i] = getters[i].apply(elem);
             }
-            out.format(fmt, (Object[])  values);
+            out.format(fmt, (Object[]) values);
         }
     }
 
     private static class Collect {
         ArrayList<SingleQB> qbs = new ArrayList<>();
+        ArrayList<CompositeQB> compositeQBS = new ArrayList<>();
         ArrayList<CatalogTable> tables = new ArrayList<>();
 
         ArrayList<SourceRef> sourceRefs = new ArrayList<>();
@@ -81,8 +81,18 @@ public class Show {
                 for (Source s : qb.getFromSources()) {
                     collect(s);
                 }
-                for(QB wQB : qb.getWhereSubQueryBlocks()) {
+                for (QB wQB : qb.getWhereSubQueryBlocks()) {
                     collect(wQB);
+                }
+            }
+        }
+
+        void collect(CompositeQB cqb) {
+            if (!compositeQBS.contains(cqb)) {
+                compositeQBS.add(cqb);
+
+                for (QB qb : cqb.childQBs()) {
+                    collect(qb);
                 }
             }
         }
@@ -107,6 +117,8 @@ public class Show {
                 collect((CatalogTable) src);
             } else if (src instanceof SingleQB) {
                 collect((SingleQB) src);
+            } else if (src instanceof CompositeQB) {
+                collect((CompositeQB) src);
             }
             for (Column c : src.columns()) {
                 collect(c);
@@ -123,6 +135,21 @@ public class Show {
     public static void show(QueryAnalysis qA, PrintStream out) {
         Collect collect = new Collect();
         collect.collect(qA);
+
+        out.println("Composite QBs:");
+        show(out, ImmutableList.<CompositeQB>copyOf(collect.compositeQBS),
+                ImmutableList.of("id", "isTopLevel", "qb_type", "parent_qb", "parent_clause", "qbs", "set_operator", "out_columns"),
+                qb -> Integer.toString(qb.getId()),
+                qb -> Boolean.toString(qb.isTopLevel()),
+                qb -> qb.getQbType().name(),
+                qb -> qb.getParentQB().map(qb1 -> Integer.toString(qb1.getId())).orElseGet(() -> ""),
+                qb -> qb.getParentClause().map(cl -> cl.name()).orElseGet(() -> ""),
+                qb -> qb.getChildQBs().stream().map(q -> String.valueOf(q.getId()))
+                        .collect(Collectors.joining(", ", "[", "]")),
+                qb -> qb.getSetOperator().toString(),
+                qb -> ImmutableList.copyOf(qb.columns()).stream().map(c -> c.getName() + "(" + c.getId() + ")").
+                        collect(Collectors.joining(", ", "[", "]"))
+        );
 
         out.println("Single QBs:");
 
@@ -178,7 +205,7 @@ public class Show {
                 t -> Integer.toString(t.getId()),
                 CatalogTable::getName,
                 CatalogTable::getFqName
-                );
+        );
 
         out.println("\nSource References:");
         show(out,

@@ -44,13 +44,13 @@ public interface QB extends Source {
 
     static QB create(QueryAnalysis qA, boolean isTopLevel, QBType qbType, TSelectSqlStatement pTree,
                      Optional<QB> parentQB, Optional<SQLClauseType> parentClause) {
-        SupportChecks.supportCheck(pTree,
-                parentQB.isPresent() ? parentQB.get().getSelectStat() : pTree,
-                s -> s.isCombinedQuery(),
-                "Combined queries(union/intersect)"
-        );
 
-        return new SingleQB(qA, isTopLevel, qbType, pTree, parentQB, parentClause);
+        if (pTree.isCombinedQuery()) {
+            return new CompositeQB(qA, isTopLevel, QBType.composite, pTree, parentQB, parentClause);
+        } else {
+            return new SingleQB(qA, isTopLevel, qbType, pTree, parentQB, parentClause);
+        }
+
     }
 
     class Features {
