@@ -38,7 +38,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-class SingleQB implements QB {
+public class SingleQB implements QB {
 
     static final Logger LOGGER = Utils.getLogger();
 
@@ -271,7 +271,7 @@ class SingleQB implements QB {
         eInfo.getFuncCalls().stream().forEach(fcf -> blockFeatures.functionApplications.add(fcf));
         eInfo.getPredicate().stream().forEach(p -> {
 
-            p.getColumnRefs().stream().map(crf -> blockFeatures.filteredColumns.add(crf.getColumn()));
+            p.getColumnRefs().stream().forEach(crf -> blockFeatures.filteredColumns.add(crf.getColumn()));
 
             if (isWhereConjunct) {
                 blockFeatures.prunablePredicates.add(p);

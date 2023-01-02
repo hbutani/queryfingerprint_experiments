@@ -26,7 +26,7 @@ public class QueryfingerprintBuilder {
     private Map<Integer, UUID> uuidMap;
     private Map<Integer, Queryfingerprint> fpMap;
 
-    QueryfingerprintBuilder(QueryAnalysis qA) {
+    public QueryfingerprintBuilder(QueryAnalysis qA) {
         this.qA = qA;
         uuidMap = new HashMap<>();
         fpMap = new HashMap<>();
@@ -50,7 +50,7 @@ public class QueryfingerprintBuilder {
         }
     }
 
-    ImmutableList<Queryfingerprint> build() {
+    public ImmutableList<Queryfingerprint> build() {
         build(qA.getTopLevelQB());
         return ImmutableList.copyOf(fpMap.values());
     }
@@ -129,7 +129,7 @@ public class QueryfingerprintBuilder {
         }
 
         for(Column c : qb.getFilteredColumns()) {
-            c.asCatalogColumn().stream().forEach(sc -> qbBuilder.columnsScanned.add(sc.getFQN()));
+            c.asCatalogColumn().stream().forEach(sc -> qbBuilder.columnsFiltered.add(sc.getFQN()));
         }
 
         for(FuncCallFeature fC : qb.functionApplications()) {

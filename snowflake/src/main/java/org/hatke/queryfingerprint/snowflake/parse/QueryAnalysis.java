@@ -79,7 +79,7 @@ public class QueryAnalysis {
         this.cteMap.put(srcRef.fqAlias.get(), srcRef);
     }
 
-    Source getCTE(String fqn) {
+    public Source getCTE(String fqn) {
         return cteMap.get(fqn);
     }
 
@@ -87,7 +87,7 @@ public class QueryAnalysis {
         return ImmutableMap.copyOf(cteMap);
     }
 
-    QB getTopLevelQB() {
+    public QB getTopLevelQB() {
         return topLevelQB;
     }
 
