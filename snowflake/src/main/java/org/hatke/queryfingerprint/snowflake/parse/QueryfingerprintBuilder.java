@@ -222,6 +222,7 @@ public class QueryfingerprintBuilder {
             return new Queryfingerprint(
                     id,
                     qb.getSelectStat().toString(),
+                    qb.isCTE(),
                     parentId,
                     qb.getQbType(),
                     ImmutableSet.copyOf(tablesReferenced),

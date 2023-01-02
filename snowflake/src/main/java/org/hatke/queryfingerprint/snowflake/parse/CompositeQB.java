@@ -28,6 +28,8 @@ public class CompositeQB implements QB {
      */
     private boolean isTopLevel;
 
+    private boolean isCTE;
+
     private QBType qbType;
 
     /**
@@ -54,7 +56,7 @@ public class CompositeQB implements QB {
 
 
     public CompositeQB(QueryAnalysis qA, boolean isTopLevel, QBType qbType, TSelectSqlStatement pTree,
-                       Optional<QB> parentQB, Optional<SQLClauseType> parentClause) {
+                       Optional<QB> parentQB, Optional<SQLClauseType> parentClause, boolean isCTE) {
         this.qA = qA;
         this.id = qA.nextId();
         this.isTopLevel = isTopLevel;
@@ -64,6 +66,7 @@ public class CompositeQB implements QB {
         this.parentClause = parentClause;
         this.childQBs = new ImmutableList.Builder<>();
         this.setOperator = this.selectStat.getSetOperatorType();
+        this.isCTE = isCTE;
 
         if (parentQB.isPresent()) {
             parentQB.get().addChildQB(this);
@@ -77,7 +80,7 @@ public class CompositeQB implements QB {
 
         for (int i = 0; i < statements.size(); i++) {
             if (statements.get(i) instanceof TSelectSqlStatement) {
-                new SingleQB(qA, false, QBType.sub_query, (TSelectSqlStatement) statements.get(i), Optional.of(this), parentClause);
+                new SingleQB(qA, false, QBType.sub_query, (TSelectSqlStatement) statements.get(i), Optional.of(this), parentClause, isCTE);
             }
         }
 
@@ -91,6 +94,11 @@ public class CompositeQB implements QB {
     @Override
     public boolean isTopLevel() {
         return isTopLevel;
+    }
+
+    @Override
+    public boolean isCTE() {
+        return isCTE;
     }
 
     @Override

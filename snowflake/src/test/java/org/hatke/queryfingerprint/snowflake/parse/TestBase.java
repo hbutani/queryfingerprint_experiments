@@ -10,6 +10,10 @@ import java.io.IOException;
 public class TestBase {
     protected static TSQLEnv sqlEnv = new TPCDSSQLEnv(EDbVendor.dbvsnowflake);
 
+    public String readTpcdsQuery(String queryFileName) throws IOException {
+        return readResourceFile(String.format("queries/tpcds/%s.sql", queryFileName));
+    }
+
     public String readResourceFile(String path) throws IOException {
         String file = this.getClass().getClassLoader().getResource(path).getFile();
         BufferedReader br = new BufferedReader(new FileReader(file));

@@ -18,6 +18,8 @@ public interface QB extends Source {
 
     boolean isTopLevel();
 
+    boolean isCTE();
+
     QBType getQbType();
 
     TSelectSqlStatement getSelectStat();
@@ -43,12 +45,12 @@ public interface QB extends Source {
     void addFeature(Consumer<Features> c);
 
     static QB create(QueryAnalysis qA, boolean isTopLevel, QBType qbType, TSelectSqlStatement pTree,
-                     Optional<QB> parentQB, Optional<SQLClauseType> parentClause) {
+                     Optional<QB> parentQB, Optional<SQLClauseType> parentClause, boolean isCTE) {
 
         if (pTree.isCombinedQuery()) {
-            return new CompositeQB(qA, isTopLevel, QBType.composite, pTree, parentQB, parentClause);
+            return new CompositeQB(qA, isTopLevel, QBType.composite, pTree, parentQB, parentClause, isCTE);
         } else {
-            return new SingleQB(qA, isTopLevel, qbType, pTree, parentQB, parentClause);
+            return new SingleQB(qA, isTopLevel, qbType, pTree, parentQB, parentClause, isCTE);
         }
 
     }
