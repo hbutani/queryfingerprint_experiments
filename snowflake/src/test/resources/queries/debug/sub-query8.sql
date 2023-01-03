@@ -7,4 +7,7 @@ select ca_zip from (
                          and c_preferred_cust_flag='Y'
                        group by ca_zip
                        having count(*) > 10
-                   ) A1
+                   ) A1,
+                  (select *
+                   from customer
+                   where A1.ca_zip = ca_zip)

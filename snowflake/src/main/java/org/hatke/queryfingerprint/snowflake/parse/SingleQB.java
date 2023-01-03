@@ -120,7 +120,6 @@ public class SingleQB implements QB {
         buildCTEs();
         buildSources();
         // TODO analyzeSourceJoins();
-        setupInputResolution();
         analyzeWhereClause();
         analyzeGroupByClause();
         analyzeResultClause();
@@ -182,6 +181,18 @@ public class SingleQB implements QB {
                 if (table.getAliasName() != null) {
                     src = new SourceRef(qA, this, src, table.getAliasName());
                 }
+
+                /*
+                 * Immediately add the columns of this source to the SourceCoMap
+                 * so subsequent query blocks in the from caluse can refer to
+                 * columns from this source.
+                 *
+                 * See sub-query8.sql as an example. Example maybe not
+                 * valid in some flavors of sql; but this kind of column
+                 * resolution is required for lateral_joins, which is
+                 * supported by most SQL Flavors.
+                 */
+                setupInputResolution(src);
                 b.add(src);
             }
         }
@@ -192,11 +203,11 @@ public class SingleQB implements QB {
     /**
      * across all input Sources mapping from col(name, fqn) to Column, provided it is unambiguous.
      */
-    ImmutableMap<String, Column> unambiguousSourceColMap;
+    ImmutableMap<String, Column> unambiguousSourceColMap = ImmutableMap.of();
 
-    private void setupInputResolution() {
+    private void setupInputResolution( Source s) {
 
-        Map<String, Column> sourceColumnMap = new HashMap<>();
+        Map<String, Column> sourceColumnMap = new HashMap<>(unambiguousSourceColMap);
         Set<String> ambiguousColNames = new HashSet<>();
 
         Function<Column, Void> addCol2 = col -> {
@@ -214,11 +225,8 @@ public class SingleQB implements QB {
             return null;
         };
 
-
-        for (Source s : fromSources) {
-            for (Column c : s.columns()) {
-                addCol2.apply(c);
-            }
+        for (Column c : s.columns()) {
+            addCol2.apply(c);
         }
 
         for (String amCol : ambiguousColNames) {
