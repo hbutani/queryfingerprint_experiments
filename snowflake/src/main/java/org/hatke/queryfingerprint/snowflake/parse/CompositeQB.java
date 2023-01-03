@@ -80,7 +80,10 @@ public class CompositeQB implements QB {
 
         for (int i = 0; i < statements.size(); i++) {
             if (statements.get(i) instanceof TSelectSqlStatement) {
-                new SingleQB(qA, false, QBType.sub_query, (TSelectSqlStatement) statements.get(i), Optional.of(this), parentClause, isCTE);
+                TSelectSqlStatement statement = (TSelectSqlStatement) statements.get(i);
+                if (!statement.isCombinedQuery()) {
+                    new SingleQB(qA, false, QBType.sub_query, statement, Optional.of(this), parentClause, isCTE);
+                }
             }
         }
 

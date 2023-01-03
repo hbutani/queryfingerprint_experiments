@@ -14,6 +14,10 @@ public class TestBase {
         return readResourceFile(String.format("queries/tpcds/%s.sql", queryFileName));
     }
 
+    public String readDebugQuery(String queryFileName) throws IOException {
+        return readResourceFile(String.format("queries/debug/%s.sql", queryFileName));
+    }
+
     public String readResourceFile(String path) throws IOException {
         String file = this.getClass().getClassLoader().getResource(path).getFile();
         BufferedReader br = new BufferedReader(new FileReader(file));

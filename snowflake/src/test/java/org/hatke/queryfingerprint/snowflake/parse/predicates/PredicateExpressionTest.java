@@ -96,6 +96,5 @@ public class PredicateExpressionTest extends TestBase {
     }
 
 
-
 }
 
