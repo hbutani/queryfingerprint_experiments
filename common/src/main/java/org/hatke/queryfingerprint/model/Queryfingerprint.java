@@ -1,5 +1,6 @@
 package org.hatke.queryfingerprint.model;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import java.io.Serializable;
