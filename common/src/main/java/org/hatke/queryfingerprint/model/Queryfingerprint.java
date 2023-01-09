@@ -8,7 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class Queryfingerprint implements Serializable  {
+public class Queryfingerprint implements Serializable {
 
     private static final long serialVersionUID = 4446331006878710519L;
 
@@ -19,6 +19,8 @@ public class Queryfingerprint implements Serializable  {
     private final Optional<UUID> parentQB;
 
     private final QBType type;
+
+    private final boolean isCTE;
 
     /**
      * A list of fully-qualified-name of tables referenced in this Query Block or any
@@ -79,7 +81,7 @@ public class Queryfingerprint implements Serializable  {
     private final ImmutableSet<UUID> referencedQBlocks;
 
 
-    public Queryfingerprint(UUID uuid, String sqlText,
+    public Queryfingerprint(UUID uuid, String sqlText, boolean isCTE,
                             Optional<UUID> parentQB, QBType type, ImmutableSet<String> tablesReferenced,
                             ImmutableSet<String> columnsScanned,
                             ImmutableSet<String> columnsFiltered,
@@ -104,6 +106,7 @@ public class Queryfingerprint implements Serializable  {
         this.joins = joins;
         this.correlatedColumns = correlatedColumns;
         this.referencedQBlocks = referencedQBlocks;
+        this.isCTE = isCTE;
     }
 
     public UUID getUuid() {
@@ -158,11 +161,16 @@ public class Queryfingerprint implements Serializable  {
         return referencedQBlocks;
     }
 
+    public boolean isCTE() {
+        return isCTE;
+    }
+
     @Override
     public String toString() {
         return "Queryfingerprint{" +
                 "\n  uuid=" + uuid +
                 "\n sqlText=" + sqlText +
+                "\n isCTE=" + isCTE +
                 Utils.optionalInfoString("\n  parentQB", parentQB) +
                 "\n  type=" + type +
                 "\n  tablesReferenced=" + tablesReferenced.stream().collect(Collectors.joining(", ", "[", "]")) +

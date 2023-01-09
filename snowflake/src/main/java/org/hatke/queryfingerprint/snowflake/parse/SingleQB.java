@@ -54,6 +54,8 @@ public class SingleQB implements QB {
      */
     private boolean isTopLevel;
 
+    private boolean isCTE;
+
     private QBType qbType;
 
     /**
@@ -71,13 +73,8 @@ public class SingleQB implements QB {
     private final Features blockFeatures = new Features();
 
     SingleQB(QueryAnalysis qA, boolean isTopLevel, QBType qbType, TSelectSqlStatement pTree,
-              Optional<QB> parentQB, Optional<SQLClauseType> parentClause) {
+             Optional<QB> parentQB, Optional<SQLClauseType> parentClause, boolean isCTE) {
 
-        SupportChecks.supportCheck(pTree,
-                qA.getTopLevelQB() != null ? qA.getTopLevelQB().getSelectStat() : pTree,
-                s -> s.isCombinedQuery(),
-                "Combined queries(union/intersect)"
-                );
 
         this.qA = qA;
         this.id = qA.nextId();
@@ -87,6 +84,7 @@ public class SingleQB implements QB {
         this.parentQB = parentQB;
         this.parentClause = parentClause;
         this.childQBs = new ImmutableList.Builder<>();
+        this.isCTE = isCTE;
 
         if (parentQB.isPresent()) {
             parentQB.get().addChildQB(this);
@@ -122,7 +120,6 @@ public class SingleQB implements QB {
         buildCTEs();
         buildSources();
         // TODO analyzeSourceJoins();
-        setupInputResolution();
         analyzeWhereClause();
         analyzeGroupByClause();
         analyzeResultClause();
@@ -142,7 +139,7 @@ public class SingleQB implements QB {
                 TSelectSqlStatement cteSelect = cte.getSubquery();
                 TObjectName cteName = cte.getTableName();
                 Source src = QB.create(qA, false, QBType.cte, cteSelect,
-                        Optional.empty(), Optional.empty());
+                        Optional.empty(), Optional.empty(), true);
                 SourceRef srcRef = new SourceRef(qA, this, src, cteName.toString());
                 qA.addCTE(srcRef);
             }
@@ -155,7 +152,7 @@ public class SingleQB implements QB {
         ImmutableList.Builder<Source> b = new ImmutableList.Builder();
 
         if (fromTables != null && fromTables.size() > 0) {
-            for(int i = 0; i < fromTables.size(); ++i) {
+            for (int i = 0; i < fromTables.size(); ++i) {
                 TTable table = fromTables.getTable(i);
                 SupportChecks.tableChecks(table, selectStat);
                 Source src = null;
@@ -167,16 +164,16 @@ public class SingleQB implements QB {
 
                     src = qA.getCTE(cteNm.right);
 
-                    if ( src == null) {
+                    if (src == null) {
                         throw new IllegalStateException(
                                 String.format("Unable resolve CTE reference %$1s\n" +
-                                        "Clause: %2$s\n",
+                                                "Clause: %2$s\n",
                                         cteNm.left, table.getCTE())
                         );
                     }
                 } else if (table.getSubquery() != null) {
                     src = QB.create(qA, false, QBType.sub_query, table.getSubquery(),
-                            Optional.of(this), Optional.of(SQLClauseType.from));
+                            Optional.of(this), Optional.of(SQLClauseType.from), isCTE);
                 } else {
                     src = new CatalogTable(qA, table);
                 }
@@ -184,6 +181,18 @@ public class SingleQB implements QB {
                 if (table.getAliasName() != null) {
                     src = new SourceRef(qA, this, src, table.getAliasName());
                 }
+
+                /*
+                 * Immediately add the columns of this source to the SourceCoMap
+                 * so subsequent query blocks in the from caluse can refer to
+                 * columns from this source.
+                 *
+                 * See sub-query8.sql as an example. Example maybe not
+                 * valid in some flavors of sql; but this kind of column
+                 * resolution is required for lateral_joins, which is
+                 * supported by most SQL Flavors.
+                 */
+                setupInputResolution(src);
                 b.add(src);
             }
         }
@@ -194,14 +203,14 @@ public class SingleQB implements QB {
     /**
      * across all input Sources mapping from col(name, fqn) to Column, provided it is unambiguous.
      */
-    ImmutableMap<String, Column> unambiguousSourceColMap;
+    ImmutableMap<String, Column> unambiguousSourceColMap = ImmutableMap.of();
 
-    private void setupInputResolution() {
+    private void setupInputResolution( Source s) {
 
-        Map<String, Column> sourceColumnMap = new HashMap<>();
+        Map<String, Column> sourceColumnMap = new HashMap<>(unambiguousSourceColMap);
         Set<String> ambiguousColNames = new HashSet<>();
 
-        Function<Column, Void>  addCol2 = col -> {
+        Function<Column, Void> addCol2 = col -> {
 
             String nm = col.getName();
 
@@ -216,14 +225,11 @@ public class SingleQB implements QB {
             return null;
         };
 
-
-        for(Source s : fromSources) {
-            for(Column c : s.columns()) {
-                addCol2.apply(c);
-            }
+        for (Column c : s.columns()) {
+            addCol2.apply(c);
         }
 
-        for(String amCol : ambiguousColNames) {
+        for (String amCol : ambiguousColNames) {
             sourceColumnMap.remove(amCol);
         }
 
@@ -239,9 +245,9 @@ public class SingleQB implements QB {
             c = unambiguousSourceColMap.get(cName.right);
         }
 
-        if ( c == null && parentQB.isPresent() ) {
-            c =  parentQB.get().resolveInputColumn(objName).orElse(null);
-            if ( c instanceof Column) {
+        if (c == null && parentQB.isPresent()) {
+            c = parentQB.get().resolveInputColumn(objName).orElse(null);
+            if (c instanceof Column) {
                 c = new Column.CorrelateColRef((Column) c, parentQB.get());
             }
         }
@@ -260,13 +266,13 @@ public class SingleQB implements QB {
     private void addExprFeature(ExprFeature eInfo,
                                 boolean isWhereConjunct) {
         eInfo.getColumnRefs().stream().forEach(crf -> {
-            if (!crf.isCorrelated()) {
-                blockFeatures.accesedColumns.add(crf.getColumn());
-            } else {
-                blockFeatures.columnsFromParent.add(crf.getColumn());
-                parentQB.get().addFeature(blockFeatures -> blockFeatures.accesedColumns.add(crf.getColumn()));
-            }
-        }
+                    if (!crf.isCorrelated()) {
+                        blockFeatures.accesedColumns.add(crf.getColumn());
+                    } else {
+                        blockFeatures.columnsFromParent.add(crf.getColumn());
+                        parentQB.get().addFeature(blockFeatures -> blockFeatures.accesedColumns.add(crf.getColumn()));
+                    }
+                }
         );
         eInfo.getFuncCalls().stream().forEach(fcf -> blockFeatures.functionApplications.add(fcf));
         eInfo.getPredicate().stream().forEach(p -> {
@@ -301,9 +307,9 @@ public class SingleQB implements QB {
 
         LOGGER.info(TreeDump.dump(whereCond));
 
-        for(TExpression subE : subqueries) {
+        for (TExpression subE : subqueries) {
             QB subQB = QB.create(qA, false, QBType.sub_query, subE.getSubQuery(),
-                    Optional.of(this), Optional.of(SQLClauseType.where));
+                    Optional.of(this), Optional.of(SQLClauseType.where), isCTE);
             whereSubQBs.put(subE, subQB);
         }
     }
@@ -324,7 +330,7 @@ public class SingleQB implements QB {
             conjuncts = new ArrayList(Arrays.asList(whereCond));
         }
 
-        for(Object o : conjuncts) {
+        for (Object o : conjuncts) {
             TExpression expr = (TExpression) o;
 
             if (expr.getExpressionType() == EExpressionType.parenthesis_t) {
@@ -379,10 +385,10 @@ public class SingleQB implements QB {
             List<Column> dependColumns =
                     exprInfos.right.stream().
                             flatMap(eI -> eI.getColumnRefs().stream().map(cr -> cr.getColumn()))
-                    .collect(Collectors.toList());
+                            .collect(Collectors.toList());
 
             return new QBOutColumn(this, qA.nextId(),
-                    alias == null ? resExpr.toString() : alias ,
+                    alias == null ? resExpr.toString() : alias,
                     ImmutableList.copyOf(dependColumns),
                     Optional.empty());
         }
@@ -397,7 +403,7 @@ public class SingleQB implements QB {
         ImmutableList.Builder<Column> outC = new ImmutableList.Builder<>();
         ImmutableMap.Builder<String, Column> outM = new ImmutableMap.Builder<>();
 
-        for(TResultColumn r : selectStat.getResultColumnList()) {
+        for (TResultColumn r : selectStat.getResultColumnList()) {
             QBOutColumn oCol = analyzeResultColumn(r);
             outC.add(oCol);
             outM.put(oCol.getName(), oCol);
@@ -414,16 +420,16 @@ public class SingleQB implements QB {
     public ImmutableList<QB> cteRefs() {
         ImmutableList.Builder<QB> b = new ImmutableList.Builder<>();
 
-        for(Source src : getFromSources()) {
+        for (Source src : getFromSources()) {
             if (src instanceof SourceRef) {
                 SourceRef srcRef = (SourceRef) src;
                 Source referencedSource = srcRef.getSource();
 
-                while(referencedSource instanceof SourceRef) {
-                    referencedSource = ((SourceRef)referencedSource).getSource();
+                while (referencedSource instanceof SourceRef) {
+                    referencedSource = ((SourceRef) referencedSource).getSource();
                 }
 
-                if (referencedSource instanceof QB && ((QB)referencedSource).getQbType() == QBType.cte) {
+                if (referencedSource instanceof QB && ((QB) referencedSource).getQbType() == QBType.cte) {
                     b.add((QB) referencedSource);
                 }
             }
@@ -437,6 +443,11 @@ public class SingleQB implements QB {
 
     public boolean isTopLevel() {
         return isTopLevel;
+    }
+
+    @Override
+    public boolean isCTE() {
+        return isCTE;
     }
 
     public QBType getQbType() {
@@ -499,7 +510,7 @@ public class SingleQB implements QB {
     }
 
     public void addCorrelatedJoinFeature(CorrelateJoinFeature cF) {
-        assert(cF.getColRef().appearsInQB().get() == this);
+        assert (cF.getColRef().appearsInQB().get() == this);
         blockFeatures.correlateJoins.add(cF);
     }
 
