@@ -253,11 +253,13 @@ public interface ExprFeature {
                     Utils.normalizedName(qb.getSqlEnv(), funcName, ESQLDataObjectType.dotFunction);
             FunctionClass fCls = FunctionClass.fromFunctionName(normalizedFnNm.left);
 
-            if (fCall.getArgs() != null && fCall.getArgs().size() == 1) {
-                ExprFeature operandFeature = match(fCall.getArgs().getExpression(0), qb);
-
-                if (operandFeature != null) {
-                    return buildFuncCall(expr, operandFeature, normalizedFnNm.right, fCls);
+            // Take first col feature. Nested and multi column feature not supported
+            if (fCall.getArgs() != null) {
+                for(int i=0; i < fCall.getArgs().size(); i++) {
+                    ExprFeature operandFeature = match(fCall.getArgs().getExpression(0), qb);
+                    if (operandFeature != null && operandFeature.getExprKind() == ExprKind.column_ref) {
+                        return buildFuncCall(expr, operandFeature, normalizedFnNm.right, fCls);
+                    }
                 }
             }
         }

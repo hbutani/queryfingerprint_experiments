@@ -21,7 +21,7 @@ public class PredicateExpressionTest extends TestBase {
         QueryfingerprintBuilder qfpB = new QueryfingerprintBuilder(qa);
         ImmutableList<Queryfingerprint> fps = qfpB.build();
 
-        assertEquals(fps.size(), 2);
+        assertEquals(fps.size(), 1);
 
         Queryfingerprint qf = fps.get(0);
 
@@ -43,7 +43,7 @@ public class PredicateExpressionTest extends TestBase {
         QueryfingerprintBuilder qfpB = new QueryfingerprintBuilder(qa);
         ImmutableList<Queryfingerprint> fps = qfpB.build();
 
-        assertEquals(fps.size(), 2);
+        assertEquals(fps.size(), 1);
 
         Queryfingerprint qf = fps.get(0);
 
@@ -63,7 +63,7 @@ public class PredicateExpressionTest extends TestBase {
         QueryfingerprintBuilder qfpB = new QueryfingerprintBuilder(qa);
         ImmutableList<Queryfingerprint> fps = qfpB.build();
 
-        assertEquals(fps.size(), 2);
+        assertEquals(fps.size(), 1);
 
         Queryfingerprint qf = fps.get(0);
 

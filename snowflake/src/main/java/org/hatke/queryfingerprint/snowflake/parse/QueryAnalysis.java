@@ -131,7 +131,7 @@ public class QueryAnalysis {
         this.sqlEnv = sqlEnv;
         this.inputStat = setupTopLevelStat(sql);
         this.topLevelQB = QB.create(this, true, QBType.regular, inputStat,
-                Optional.empty(), Optional.empty());
+                Optional.empty(), Optional.empty(), false);
     }
 
 /*
