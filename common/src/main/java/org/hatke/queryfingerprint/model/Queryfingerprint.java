@@ -1,6 +1,5 @@
 package org.hatke.queryfingerprint.model;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import java.io.Serializable;
@@ -48,6 +47,19 @@ public class Queryfingerprint implements Serializable {
     private final ImmutableSet<String> columnsScanFiltered;
 
     /**
+     * A list of fully-qualified-name of columns with group by (across all clauses)
+     * in this Query Block or any referenced blocks(ctes, views) or sub-query blocks.
+     */
+    private final ImmutableSet<String> groupedColumns;
+
+    /**
+     * A list of fully-qualified-name of columns with order by (across all clauses)
+     * in this Query Block or any referenced blocks(ctes, views) or sub-query blocks.
+     */
+    private final ImmutableSet<String> orderedColumns;
+
+
+    /**
      * List of {@link Predicate} in this Query Block or referenced or child query block.
      */
     private final ImmutableSet<Predicate> predicates;
@@ -91,7 +103,10 @@ public class Queryfingerprint implements Serializable {
                             ImmutableSet<FunctionApplication> functionApplications,
                             ImmutableSet<Join> joins,
                             ImmutableSet<String> correlatedColumns,
-                            ImmutableSet<UUID> referencedQBlocks) {
+                            ImmutableSet<UUID> referencedQBlocks,
+                            ImmutableSet<String> columnsGroupBy,
+                            ImmutableSet<String> columnsOrderBy
+    ) {
         this.uuid = uuid;
         this.sqlText = sqlText;
         this.parentQB = parentQB;
@@ -107,6 +122,8 @@ public class Queryfingerprint implements Serializable {
         this.correlatedColumns = correlatedColumns;
         this.referencedQBlocks = referencedQBlocks;
         this.isCTE = isCTE;
+        this.groupedColumns = columnsGroupBy;
+        this.orderedColumns = columnsOrderBy;
     }
 
     public UUID getUuid() {
@@ -163,6 +180,14 @@ public class Queryfingerprint implements Serializable {
 
     public boolean isCTE() {
         return isCTE;
+    }
+
+    public ImmutableSet<String> getGroupedColumns() {
+        return groupedColumns;
+    }
+
+    public ImmutableSet<String> getOrderedColumns() {
+        return orderedColumns;
     }
 
     @Override

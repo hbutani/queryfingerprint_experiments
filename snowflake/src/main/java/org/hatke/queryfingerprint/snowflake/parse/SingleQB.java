@@ -7,12 +7,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import gudusoft.gsqlparser.EExpressionType;
-import gudusoft.gsqlparser.nodes.TCTE;
-import gudusoft.gsqlparser.nodes.TExpression;
-import gudusoft.gsqlparser.nodes.TObjectName;
-import gudusoft.gsqlparser.nodes.TResultColumn;
-import gudusoft.gsqlparser.nodes.TTable;
-import gudusoft.gsqlparser.nodes.TTableList;
+import gudusoft.gsqlparser.nodes.*;
 import gudusoft.gsqlparser.sqlenv.ESQLDataObjectType;
 import gudusoft.gsqlparser.sqlenv.TSQLEnv;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
@@ -122,6 +117,7 @@ public class SingleQB implements QB {
         // TODO analyzeSourceJoins();
         analyzeWhereClause();
         analyzeGroupByClause();
+        analyzeOrderByClause();
         analyzeResultClause();
     }
 
@@ -205,7 +201,7 @@ public class SingleQB implements QB {
      */
     ImmutableMap<String, Column> unambiguousSourceColMap = ImmutableMap.of();
 
-    private void setupInputResolution( Source s) {
+    private void setupInputResolution(Source s) {
 
         Map<String, Column> sourceColumnMap = new HashMap<>(unambiguousSourceColMap);
         Set<String> ambiguousColNames = new HashSet<>();
@@ -295,6 +291,14 @@ public class SingleQB implements QB {
         }
     }
 
+    private void addGroupByFeature(ExprFeature eInfo) {
+        blockFeatures.groupedColumns.add(eInfo);
+    }
+
+    private void addOrderByFeature(ExprFeature eInfo) {
+        blockFeatures.orderedColumns.add(eInfo);
+    }
+
     private ImmutableMap.Builder<TExpression, QB> whereSubQBs = new ImmutableMap.Builder<>();
 
 
@@ -351,10 +355,35 @@ public class SingleQB implements QB {
     }
 
     private void analyzeGroupByClause() {
-        // TODO
+        if(selectStat.getGroupByClause() != null) {
+            TGroupByItemList items = selectStat.getGroupByClause().getItems();
+            for (int i = 0; i < items.size(); i++) {
+                TGroupByItem item = items.getGroupByItem(i);
+                ExprFeature groupbyFeature = ExprFeature.match(item.getExpr(), this);
+                if (groupbyFeature != null) {
+                    addExprFeature(groupbyFeature, false);
+                    addGroupByFeature(groupbyFeature);
+                }
+            }
+        }
+
         // for each group expr run the ExpressionAnalyzer
         // add to grouped Columns
         // add to functionApplications
+    }
+
+    private void analyzeOrderByClause() {
+        if(selectStat.getOrderbyClause() != null) {
+            TOrderByItemList items = selectStat.getOrderbyClause().getItems();
+            for (int i = 0; i < items.size(); i++) {
+                TOrderByItem item = items.getOrderByItem(i);
+                ExprFeature orderByFeature = ExprFeature.match(item.getSortKey(), this);
+                if (orderByFeature != null) {
+                    addExprFeature(orderByFeature, false);
+                    addOrderByFeature(orderByFeature);
+                }
+            }
+        }
     }
 
     private ImmutableList<Column> outColumns = ImmutableList.of();
@@ -483,6 +512,18 @@ public class SingleQB implements QB {
 
     public ImmutableSet<Column> getFilteredColumns() {
         return blockFeatures.filteredColumns.build().stream().collect(ImmutableSet.toImmutableSet());
+    }
+
+    public ImmutableSet<Column> getGroupedColumns() {
+        return blockFeatures.groupedColumns.build().stream()
+                .flatMap(c -> c.getColumnRefs().stream().map(cr -> cr.getColumn()))
+                .collect(ImmutableSet.toImmutableSet());
+    }
+
+    public ImmutableSet<Column> getOrderedColumns() {
+        return blockFeatures.orderedColumns.build().stream()
+                .flatMap(c -> c.getColumnRefs().stream().map(cr -> cr.getColumn()))
+                .collect(ImmutableSet.toImmutableSet());
     }
 
     public ImmutableList<PredicateFeature> prunablePredicates() {
