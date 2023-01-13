@@ -39,7 +39,7 @@ public class CompositeQueryTest extends TestBase {
         QueryAnalysis qa = new QueryAnalysis(sqlEnv, query);
         QueryfingerprintBuilder qfpB = new QueryfingerprintBuilder(qa);
         ImmutableList<Queryfingerprint> fps = qfpB.build();
-        assertEquals(fps.size(), 5);
+        assertEquals(fps.size(), 6);
 
 //        ImmutableList<Queryfingerprint>  cteQueries = fps.stream().filter( f -> f.isCTE()).collect(ImmutableList.toImmutableList());
 //        assertEquals(cteQueries.size(), 4);

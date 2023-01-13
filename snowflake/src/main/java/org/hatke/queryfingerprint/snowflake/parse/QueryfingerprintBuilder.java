@@ -178,6 +178,14 @@ public class QueryfingerprintBuilder {
         for(Column c : qb.columnsFromParent()) {
             c.asCatalogColumn().stream().forEach(sc -> qbBuilder.correlatedColumns.add(sc.getFQN()));
         }
+
+        for(Column c : qb.getGroupedColumns()) {
+            c.asCatalogColumn().stream().forEach(sc -> qbBuilder.groupedColumns.add(sc.getFQN()));
+        }
+
+        for(Column c : qb.getOrderedColumns()) {
+            c.asCatalogColumn().stream().forEach(sc -> qbBuilder.orderedColumns.add(sc.getFQN()));
+        }
     }
 
     class QBBuilder {
@@ -198,6 +206,8 @@ public class QueryfingerprintBuilder {
         HashSet<Join> joins = new HashSet<>();
         HashSet<String> correlatedColumns = new HashSet<>();
         HashSet<UUID> referencedQBlocks = new HashSet<>();
+        HashSet<String> groupedColumns = new HashSet<>();
+        HashSet<String> orderedColumns = new HashSet<>();
 
         public QBBuilder(QB qb) {
             this.qb = qb;
@@ -216,6 +226,8 @@ public class QueryfingerprintBuilder {
             joins.addAll(childFP.getJoins());
             referencedQBlocks.add(childFP.getUuid());
             referencedQBlocks.addAll(childFP.getReferencedQBlocks());
+            groupedColumns.addAll(childFP.getGroupedColumns());
+            orderedColumns.addAll(childFP.getOrderedColumns());
         }
 
         Queryfingerprint build() {
@@ -234,7 +246,9 @@ public class QueryfingerprintBuilder {
                     ImmutableSet.copyOf(functionApplications),
                     ImmutableSet.copyOf(joins),
                     ImmutableSet.copyOf(correlatedColumns),
-                    ImmutableSet.copyOf(referencedQBlocks)
+                    ImmutableSet.copyOf(referencedQBlocks),
+                    ImmutableSet.copyOf(groupedColumns),
+                    ImmutableSet.copyOf(orderedColumns)
             );
         }
 

@@ -4,10 +4,7 @@ import com.google.common.collect.ImmutableList;
 import gudusoft.gsqlparser.nodes.TObjectName;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
 import org.hatke.queryfingerprint.model.QBType;
-import org.hatke.queryfingerprint.snowflake.parse.features.CorrelateJoinFeature;
-import org.hatke.queryfingerprint.snowflake.parse.features.FuncCallFeature;
-import org.hatke.queryfingerprint.snowflake.parse.features.JoinFeature;
-import org.hatke.queryfingerprint.snowflake.parse.features.PredicateFeature;
+import org.hatke.queryfingerprint.snowflake.parse.features.*;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -74,6 +71,10 @@ public interface QB extends Source {
         ImmutableList.Builder<CorrelateJoinFeature> correlateJoins = new ImmutableList.Builder<>();
 
         ImmutableList.Builder<Column> columnsFromParent = new ImmutableList.Builder<>();
+
+        ImmutableList.Builder<ExprFeature> groupedColumns = new ImmutableList.Builder<>();
+
+        ImmutableList.Builder<ExprFeature> orderedColumns = new ImmutableList.Builder<>();
     }
 
 }
