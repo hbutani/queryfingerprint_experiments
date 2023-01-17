@@ -354,15 +354,27 @@ public class SingleQB implements QB {
 
     }
 
+    private void analyzeGroupByExpr(TExpression gByExpr) {
+        ExprFeature groupbyFeature = ExprFeature.match(gByExpr, this);
+        if (groupbyFeature != null) {
+            addExprFeature(groupbyFeature, false);
+            addGroupByFeature(groupbyFeature);
+        }
+    }
+
     private void analyzeGroupByClause() {
         if(selectStat.getGroupByClause() != null) {
             TGroupByItemList items = selectStat.getGroupByClause().getItems();
             for (int i = 0; i < items.size(); i++) {
                 TGroupByItem item = items.getGroupByItem(i);
-                ExprFeature groupbyFeature = ExprFeature.match(item.getExpr(), this);
-                if (groupbyFeature != null) {
-                    addExprFeature(groupbyFeature, false);
-                    addGroupByFeature(groupbyFeature);
+
+                if (item.getRollupCube() != null) {
+                    TExpressionList eList = item.getRollupCube().getItems();
+                    for( TExpression expr : eList) {
+                        analyzeGroupByExpr(expr);
+                    }
+                } else {
+                    analyzeGroupByExpr(item.getExpr());
                 }
             }
         }
