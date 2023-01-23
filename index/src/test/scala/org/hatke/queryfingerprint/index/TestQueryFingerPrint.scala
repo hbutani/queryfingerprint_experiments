@@ -1,10 +1,13 @@
 package org.hatke.queryfingerprint.index
 
+import com.sksamuel.elastic4s.requests.mappings.MappingDefinition
+import com.sksamuel.elastic4s.{Hit, HitReader, Indexable}
 import org.hatke.queryfingerprint.json.JsonUtils
 import org.json4s.jackson.Serialization
 import org.json4s.{CustomSerializer, DefaultFormats, Formats, JInt, JString, ShortTypeHints}
 
 import java.util.UUID
+import scala.util.Try
 
 
 object TestJoinType extends Enumeration {
@@ -29,15 +32,41 @@ object TestJoinType extends Enumeration {
   implicit def valueToJoinTypeVal(x: Value): JoinTypeVal = x.asInstanceOf[JoinTypeVal]
 }
 
-case class TestPredicate(column: String, operator: String, functionApplication: Option[String] = None)
+case class TestPredicate(column: String, operator: String, functionApplication: Option[String] = None) {
+
+  def indexElements: Seq[String] = {
+    Seq(column,
+      s"${column} ${operator}"
+    ) ++ functionApplication.map(f => s"${column} ${operator} ${f}").toSeq
+  }
+}
 
 case class TestJoin(leftTable: String,
                     leftColumn: String,
                     rightTable: String,
                     rightColumn: String,
-                    joinType: TestJoinType.Value)
+                    joinType: TestJoinType.Value) {
 
-case class TestFunctionApplication(functionName : String, column : String)
+  def indexElements: Seq[String] = {
+    Seq(
+      s"${leftTable} ${rightTable}",
+      s"${leftTable} ${rightTable} ${joinType}",
+      s"${leftTable} ${rightTable} ${joinType} ${leftColumn} ${rightColumn}"
+    )
+  }
+}
+
+case class TestFunctionApplication(functionName: String, column: String) {
+  def indexElements: Seq[String] = {
+    Seq(s"${functionName} ${column}")
+  }
+
+  def isAggregate: Boolean = TestFunctionApplication.AGG_FUNCTIONS.contains(functionName)
+}
+
+object TestFunctionApplication {
+  val AGG_FUNCTIONS = Set("SUM", "COUNT", "MIN", "MAX", "AVG", "AVERAGE")
+}
 
 case class TestQueryFingerPrint(uuid: String,
                                 tablesReferenced: Set[String],
@@ -45,12 +74,78 @@ case class TestQueryFingerPrint(uuid: String,
                                 columnsFiltered: Set[String],
                                 predicates: Set[TestPredicate],
                                 joins: Set[TestJoin],
-                                functionApplications : Set[TestFunctionApplication] = Set.empty,
-                                groupedColumns : Set[String] = Set.empty,
-                                orderedColumns : Set[String] = Set.empty
-                               )
+                                functionApplications: Set[TestFunctionApplication] = Set.empty,
+                                groupedColumns: Set[String] = Set.empty,
+                                orderedColumns: Set[String] = Set.empty
+                               ) {
+
+  @transient lazy val featureVector: Array[Int] = {
+    Array(
+      tablesReferenced.size,
+      joins.size,
+      predicates.size,
+      groupedColumns.size,
+      functionApplications.map(_.isAggregate).size
+    )
+  }
+
+}
 
 object TestQueryFingerPrint {
+
+  private val SOURCE_FIELD = "qfp_source"
+  private val FEATURE_VECTOR_DIM = 5
+
+  implicit object TQFPIndexable extends Indexable[TestQueryFingerPrint] {
+    override def json(qfp: TestQueryFingerPrint): String = {
+      import org.json4s.DefaultWriters._
+      import org.json4s.JsonDSL._
+      import org.json4s.jackson.JsonMethods._
+
+      val json  = ("tablesReferenced" -> qfp.tablesReferenced) ~
+        ("columnsScanned" -> qfp.columnsScanned) ~
+        ("columnsFiltered" -> qfp.columnsFiltered) ~
+        ("predicates" -> qfp.predicates.flatMap(_.indexElements)) ~
+        ("joins" -> qfp.joins.flatMap(_.indexElements)) ~
+        ("functionApplications" -> qfp.functionApplications.flatMap(_.indexElements)) ~
+        ("groupedColumns" -> qfp.groupedColumns) ~
+        ("orderedColumns" -> qfp.orderedColumns) ~
+        ("featureVector" -> asJValue(qfp.featureVector)) ~
+        (SOURCE_FIELD -> JsonUtils.asJson(qfp)(jsonFormat))
+
+      compact(render(json))
+    }
+  }
+
+  implicit object TQFPHitReader extends HitReader[TestQueryFingerPrint] {
+    override def read(hit: Hit): Try[TestQueryFingerPrint] = {
+      Try {
+        JsonUtils.fromJson[TestQueryFingerPrint](hit.sourceField(SOURCE_FIELD).asInstanceOf[String])
+      }
+    }
+  }
+
+  val elasticMapping = {
+    import com.sksamuel.elastic4s.ElasticDsl._
+    import com.sksamuel.elastic4s.fields.DenseVectorField
+
+    val properties = Seq(
+      keywordField("tablesReferenced"),
+      keywordField("columnsScanned"),
+      keywordField("columnsFiltered"),
+      keywordField("columnsScanFiltered"),
+      keywordField("groupedColumns"),
+      keywordField("orderedColumns"),
+      keywordField("predicates"),
+      keywordField("scannedPredicates"),
+      keywordField("functionApplications"),
+      keywordField("joins"),
+      DenseVectorField("featureVector", FEATURE_VECTOR_DIM),
+      textField(SOURCE_FIELD).index(false)
+    )
+
+    MappingDefinition(properties)
+  }
 
   object UUIDTypeSerializer extends CustomSerializer[UUID](
     format => ( {
@@ -107,7 +202,7 @@ object TestQueryFingerPrint {
         TestJoin(leftTable = "TPCDS.DATE_DIM", rightTable = "TPCDS.STORE_RETURNS",
           leftColumn = "TPCDS.DATE_DIM.D_DATE_SK",
           rightColumn = "TPCDS.STORE_RETURNS.SR_RETURNED_DATE_SK", joinType = TestJoinType.inner
-      ))
+        ))
     ),
     "q2" -> TestQueryFingerPrint(
       uuid = "q2",
@@ -389,7 +484,12 @@ object TestQueryFingerPrint {
 }
 
 object Main extends App {
-  println(JsonUtils.asJson(TestJoinType.inner)(TestQueryFingerPrint.jsonFormat))
+  implicit val f = TestQueryFingerPrint.jsonFormat
+
+  val j1 = JsonUtils.asJson(TestJoinType.inner)
+
+
+  println(JsonUtils.fromJson[TestJoinType.Value](j1))
 
   println(JsonUtils.asJson(TestPredicate("A", "=", Some("SUBSTR")))(TestQueryFingerPrint.jsonFormat))
 
@@ -398,5 +498,16 @@ object Main extends App {
     rightColumn = "TPCDS.STORE_RETURNS.SR_RETURNED_DATE_SK", joinType = TestJoinType.inner)
   )(TestQueryFingerPrint.jsonFormat))
 
-  println(JsonUtils.asJson(TestQueryFingerPrint.tpcdsQFP("q1"))(TestQueryFingerPrint.jsonFormat))
+  val json = JsonUtils.asJson(TestQueryFingerPrint.tpcdsQFP("q1"))(TestQueryFingerPrint.jsonFormat)
+
+  println(json)
+
+
+  val qfp = JsonUtils.fromJson[TestQueryFingerPrint](json)
+
+  println(qfp)
+
+  val x = JsonUtils.asJson(qfp.featureVector)
+
+  println(x)
 }

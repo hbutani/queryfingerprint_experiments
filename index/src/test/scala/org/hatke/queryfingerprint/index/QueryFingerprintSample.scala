@@ -5,6 +5,24 @@ import org.hatke.queryfingerprint.model.Queryfingerprint
 import com.sksamuel.elastic4s.ElasticDsl
 import com.sksamuel.elastic4s.fields.ObjectField
 
+import java.util.UUID
+
+/**
+ * 1. Map TestQueryFingerPrint to an Index    DONE
+ *    - Fix Mapping  DONE
+ * 2. Manually save 10 TPCDS queries    DONE
+ *    - Add Group By, Order By, FuncApp?
+ * 3. TestJoin json
+ *      only single lCol, rCol
+ *      joinType_leftTable_rightTable
+ *      joinType_leftTable_rightTable_lCol_rCol
+ * 3. Try Search interface for TPCDS queries
+ *    - Given a TestQueryFingerPrint map to a Search Query.
+ * 4. Given a Trei
+ *    - Names -> Table, Column
+ *    - Values -> Column
+ */
+
 object QueryFingerprintSample extends App {
 
   lazy val client = ESClientUtils.setupHttpClient()
@@ -28,44 +46,10 @@ object QueryFingerprintSample extends App {
       val req = ElasticDsl.createIndex("query_fingerprint").
         shards(1).
         replicas(1).
-        mapping(
-          properties(
-            keywordField("jsonClass").copy(index = Some(false)),
-            keywordField("uuid").copy(index = Some(false)),
-            keywordField("tablesReferenced"),
-            keywordField("columnsScanned"),
-            keywordField("columnsFiltered"),
-            keywordField("columnsScanFiltered"),
-            keywordField("groupedColumns"),
-            keywordField("orderedColumns"),
-            ObjectField("predicates", None, None, Seq(
-              keywordField("jsonClass").copy(index = Some(false)),
-              keywordField("column"),
-              keywordField("operator"),
-              keywordField("functionApplication")
-            )),
-            keywordField("scannedPredicates"),
-            keywordField("functionApplications"),
-            ObjectField("joins", None, None, Seq(
-              keywordField("jsonClass").copy(index = Some(false)),
-              keywordField("leftTable"),
-              keywordField("leftColumns"),
-              keywordField("rightTable"),
-              keywordField("rightColumns"),
-              keywordField("joinType")
-            )
-            ),
-            // keywordField("joins"),
-            keywordField("correlatedColumns"),
-          ) // .all(false)
-        ).
+        mapping(TestQueryFingerPrint.elasticMapping).
         singleShard().
         singleReplica()
-
-      println(req.toString)
-
       req
-
     }.await.result
   }
 
@@ -96,10 +80,6 @@ object QueryFingerprintSample extends App {
 
   def indexQFP2(qfp : TestQueryFingerPrint) : IndexResponse = {
     import com.sksamuel.elastic4s.ElasticDsl._
-    import com.sksamuel.elastic4s.json4s.ElasticJson4s.Implicits._
-
-    implicit val jF = TestQueryFingerPrint.jsonFormat
-    implicit val a = org.json4s.jackson.Serialization
 
     client.execute {
       indexInto("query_fingerprint").doc(qfp).refreshImmediately
@@ -118,10 +98,6 @@ object QueryFingerprintSample extends App {
 
   def searchAll : IndexedSeq[TestQueryFingerPrint] = {
     import com.sksamuel.elastic4s.ElasticDsl._
-    import com.sksamuel.elastic4s.json4s.ElasticJson4s.Implicits._
-
-    implicit val jF = TestQueryFingerPrint.jsonFormat
-    implicit val a = org.json4s.jackson.Serialization
 
     val r = client.execute {
       search("query_fingerprint").matchAllQuery()
