@@ -9,3 +9,7 @@ build
 lib/**
 
 .idea/**
+
+**/target
+
+**/.DS_Store

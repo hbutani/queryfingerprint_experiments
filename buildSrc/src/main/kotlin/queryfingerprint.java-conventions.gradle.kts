@@ -29,8 +29,8 @@ dependencies {
     api("org.apache.logging.log4j:log4j-api:2.13.3")
     api("org.apache.logging.log4j:log4j-core:2.13.3")
     api("org.apache.logging.log4j:log4j-slf4j-impl:2.13.3")
-    api("org.slf4j:slf4j-api:1.7.25")
-    api("org.slf4j:slf4j-log4j12:1.7.25")
+    api("org.slf4j:slf4j-api:2.0.6")
+    api("org.slf4j:slf4j-log4j12:2.0.6")
 }
 
 tasks.named<Test>("test") {

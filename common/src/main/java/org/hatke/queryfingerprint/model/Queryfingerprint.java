@@ -206,6 +206,8 @@ public class Queryfingerprint implements Serializable {
                 "\n  scanPredicates=" + scanPredicates.stream().map(p -> p.toString()).collect(Collectors.joining(", ", "[", "]")) +
                 "\n  functionApplications=" + functionApplications.stream().map(f -> f.toString()).collect(Collectors.joining(", ", "[", "]")) +
                 "\n  joins=" + joins.stream().map(f -> f.toString()).collect(Collectors.joining(", ", "[", "]")) +
+                "\n  groupedColumns=" + groupedColumns.stream().collect(Collectors.joining(", ", "[", "]")) +
+                "\n  orderedColumns=" + orderedColumns.stream().collect(Collectors.joining(", ", "[", "]")) +
                 "\n  correlatedColumns=" + correlatedColumns.stream().collect(Collectors.joining(", ", "[", "]")) +
                 "\n  referencedQBlocks=" + referencedQBlocks.stream().map(f -> f.toString()).collect(Collectors.joining(", ", "[", "]")) +
                 "\n}";
