@@ -13,3 +13,4 @@ lib/**
 **/target
 
 **/.DS_Store
+dev/docker/docker-data/**

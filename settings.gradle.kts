@@ -11,4 +11,5 @@ rootProject.name = "queryfingerprint"
 include("common")
 include("snowflake")
 include("index")
+include("es-index")
 
