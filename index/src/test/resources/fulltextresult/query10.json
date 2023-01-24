@@ -1,0 +1,139 @@
+{
+  "took": 16,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 102,
+      "relation": "eq"
+    },
+    "max_score": 409.98154,
+    "hits": [
+      {
+        "_index": "queries",
+        "_id": "NLH14oUBp9oO7cbOzPnh",
+        "_score": 409.98154,
+        "_ignored": [
+          "query.keyword"
+        ],
+        "_source": {
+          "query": "select cd_gender\n    , cd_marital_status\n    , cd_education_status\n    , count(*) cnt1\n    , cd_purchase_estimate\n    , count(*) cnt2\n    , cd_credit_rating\n    , count(*) cnt3\n    , cd_dep_count\n    , count(*) cnt4\n    , cd_dep_employed_count\n    , count(*) cnt5\n    , cd_dep_college_count\n    , count(*) cnt6\nfrom customer c\n    , customer_address ca\n    , customer_demographics\nwhere c.c_current_addr_sk = ca.ca_address_sk \n    and ca_county in ('Walker County','Richland County','Gaines County','Douglas County','Dona Ana County') \n    and cd_demo_sk = c.c_current_cdemo_sk \n    and \n        exists (\n        select *\n        from store_sales, date_dim\n        where c.c_customer_sk = ss_customer_sk and ss_sold_date_sk = d_date_sk and d_year = 2002 and d_moy between 4 and 4+3) and (\n        exists (\n            select *\n            from web_sales, date_dim\n            where c.c_customer_sk = ws_bill_customer_sk and ws_sold_date_sk = d_date_sk and d_year = 2002 and d_moy between 4 ANd 4+3\n        ) or \n        exists (\n            select *\n            from catalog_sales, date_dim\n            where c.c_customer_sk = cs_ship_customer_sk and cs_sold_date_sk = d_date_sk and d_year = 2002 and d_moy between 4 and 4+3)\n        )\ngroup by cd_gender\n    , cd_marital_status\n    , cd_education_status\n    , cd_purchase_estimate\n    , cd_credit_rating\n    , cd_dep_count\n    , cd_dep_employed_count\n    , cd_dep_college_count\norder by cd_gender\n    , cd_marital_status\n    , cd_education_status\n    , cd_purchase_estimate\n    , cd_credit_rating\n    , cd_dep_count\n    , cd_dep_employed_count\n    , cd_dep_college_count\nlimit 100;\n",
+          "id": 10
+        }
+      },
+      {
+        "_index": "queries",
+        "_id": "TbH14oUBp9oO7cbOzflQ",
+        "_score": 243.11342,
+        "_ignored": [
+          "query.keyword"
+        ],
+        "_source": {
+          "query": "select ca_state\n    , cd_gender\n    , cd_marital_status\n    , cd_dep_count\n    , count(*) cnt1\n    , avg(cd_dep_count)\n    , max(cd_dep_count)\n    , sum(cd_dep_count)\n    , cd_dep_employed_count\n    , count(*) cnt2\n    , avg(cd_dep_employed_count)\n    , max(cd_dep_employed_count)\n    , sum(cd_dep_employed_count)\n    , cd_dep_college_count\n    , count(*) cnt3\n    , avg(cd_dep_college_count)\n    , max(cd_dep_college_count)\n    , sum(cd_dep_college_count)\nfrom customer c\n    , customer_address ca\n    , customer_demographics\nwhere c.c_current_addr_sk = ca.ca_address_sk \n    and cd_demo_sk = c.c_current_cdemo_sk \n    and exists (\n        select *\n        from store_sales, date_dim\n        where c.c_customer_sk = ss_customer_sk \n            and ss_sold_date_sk = d_date_sk \n            and d_year = 1999 and d_qoy < 4\n    ) \n    and (\n        exists (\n            select *\n            from web_sales, date_dim\n            where c.c_customer_sk = ws_bill_customer_sk \n                and ws_sold_date_sk = d_date_sk \n                and d_year = 1999 and d_qoy < 4\n            ) \n        or exists (\n            select *\n            from catalog_sales\n                , date_dim\n            where c.c_customer_sk = cs_ship_customer_sk \n                and cs_sold_date_sk = d_date_sk \n                and d_year = 1999 and d_qoy < 4\n            )\n    )\ngroup by ca_state\n    , cd_gender\n    , cd_marital_status\n    , cd_dep_count\n    , cd_dep_employed_count\n    , cd_dep_college_count\norder by ca_state\n    , cd_gender\n    , cd_marital_status\n    , cd_dep_count\n    , cd_dep_employed_count\n    , cd_dep_college_count\nlimit 100\n;\n",
+          "id": 35
+        }
+      },
+      {
+        "_index": "queries",
+        "_id": "b7H14oUBp9oO7cbOzfns",
+        "_score": 219.98094,
+        "_ignored": [
+          "query.keyword"
+        ],
+        "_source": {
+          "query": "select cd_gender\n    , cd_marital_status\n    , cd_education_status\n    , count(*) cnt1\n    , cd_purchase_estimate\n    , count(*) cnt2\n    , cd_credit_rating\n    , count(*) cnt3\nfrom customer c\n    , customer_address ca\n    , customer_demographics\nwhere c.c_current_addr_sk = ca.ca_address_sk \n    and ca_state in ('CO','IL','MN') \n    and cd_demo_sk = c.c_current_cdemo_sk \n    and exists (\n        select *\n        from store_sales, date_dim\n        where c.c_customer_sk = ss_customer_sk \n            and ss_sold_date_sk = d_date_sk \n            and d_year = 1999 \n            and d_moy between 1 \n            and 1+2\n    ) and (\n        not exists (\n            select *\n            from web_sales, date_dim\n            where c.c_customer_sk = ws_bill_customer_sk \n                and ws_sold_date_sk = d_date_sk \n                and d_year = 1999 \n                and d_moy between 1 and 1+2\n        ) and not exists (\n            select *\n            from catalog_sales, date_dim\n            where c.c_customer_sk = cs_ship_customer_sk \n                and cs_sold_date_sk = d_date_sk \n                and d_year = 1999 \n                and d_moy between 1 and 1+2\n        )\n    )\ngroup by cd_gender\n    , cd_marital_status\n    , cd_education_status\n    , cd_purchase_estimate\n    , cd_credit_rating\norder by cd_gender\n    , cd_marital_status\n    , cd_education_status\n    , cd_purchase_estimate\n    , cd_credit_rating\nlimit 100\n;\n",
+          "id": 69
+        }
+      },
+      {
+        "_index": "queries",
+        "_id": "OrH14oUBp9oO7cbOzPn9",
+        "_score": 101.935936,
+        "_ignored": [
+          "query.keyword"
+        ],
+        "_source": {
+          "query": "select count(distinct cs_order_number) as `order count` \n    ,sum(cs_ext_ship_cost) as `total shipping cost` \n    ,sum(cs_net_profit) as `total net profit` \nfrom catalog_sales cs1 \n    ,date_dim \n    ,customer_address \n    ,call_center \nwhere d_date between '2001-4-01' and (cast('2001-4-01' as date) + interval '60' days) \n    and cs1.cs_ship_date_sk = d_date_sk \n    and cs1.cs_ship_addr_sk = ca_address_sk \n    and ca_state = 'NY' \n    and cs1.cs_call_center_sk = cc_call_center_sk \n    and cc_county in ('Ziebach County','Levy County','Huron County','Franklin Parish', 'Daviess County' ) \n    and exists (\n        select *\n        from catalog_sales cs2\n        where cs1.cs_order_number = cs2.cs_order_number \n            and cs1.cs_warehouse_sk <> cs2.cs_warehouse_sk\n        )\n        and not exists(\n            select *\n            from catalog_returns cr1\n--             where cs1.cs_order_number = cr1.cr_order_number\n        )\norder by `order count` \nlimit 100;\n",
+          "id": 16
+        }
+      },
+      {
+        "_index": "queries",
+        "_id": "QbH14oUBp9oO7cbOzfke",
+        "_score": 83.40291,
+        "_ignored": [
+          "query.keyword"
+        ],
+        "_source": {
+          "query": "with\n    frequent_ss_items\n    as\n    (\n        select substr(i_item_desc,1,30) itemdesc\n            , i_item_sk item_sk\n            , d_date solddate\n            , count(*) cnt\n        from store_sales \n            , date_dim \n            , item\n        where ss_sold_date_sk = d_date_sk \n            and ss_item_sk = i_item_sk \n            and d_year in (1999,1999+1,1999+2,1999+3)\n        group by substr(i_item_desc,1,30)\n            ,i_item_sk\n            ,d_date\n        having count(*) >4\n    ),\n    max_store_sales\n    as\n    (\n        select max(csales) tpcds_cmax\n        from (\n            select c_customer_sk\n                , sum(ss_quantity*ss_sales_price) csales\n            from store_sales \n                , customer \n                , date_dim\n            where ss_customer_sk = c_customer_sk \n                and ss_sold_date_sk = d_date_sk \n                and d_year in (1999,1999+1,1999+2,1999+3)\n            group by c_customer_sk\n        ) x\n    ),\n    best_ss_customer\n    as\n    (\n        select c_customer_sk, \n            sum(ss_quantity*ss_sales_price) ssales\n        from store_sales \n            , customer\n        where ss_customer_sk = c_customer_sk\n        group by c_customer_sk\n        having sum(ss_quantity*ss_sales_price) > (95/100.0) * (\n            select *\n            from max_store_sales\n        )\n    )\nselect sum(sales)\nfrom (\n        (\n        select cs_quantity*cs_list_price sales\n        from catalog_sales \n            , date_dim\n        where d_year = 1999 \n            and d_moy = 1 \n            and cs_sold_date_sk = d_date_sk \n            and cs_item_sk in (\n                select item_sk\n                from frequent_ss_items\n            ) \n            and cs_bill_customer_sk in (\n                select c_customer_sk\n                from best_ss_customer\n            )\n        )\n    union all\n        (\n            select ws_quantity*ws_list_price sales\n            from web_sales \n                , date_dim\n            where d_year = 1999 \n                and d_moy = 1 \n                and ws_sold_date_sk = d_date_sk \n                and ws_item_sk in (\n                    select item_sk\n                    from frequent_ss_items\n                ) \n                and ws_bill_customer_sk in (\n                    select c_customer_sk\n                    from best_ss_customer\n                )\n        )\n) y\nlimit 100;\n\nwith\n    frequent_ss_items\n    as\n    (\n        select substr(i_item_desc,1,30) itemdesc\n            , i_item_sk item_sk\n            , d_date solddate\n            , count(*) cnt\n        from store_sales \n            , date_dim \n            , item\n        where ss_sold_date_sk = d_date_sk \n            and ss_item_sk = i_item_sk \n            and d_year in (1999,1999 + 1,1999 + 2,1999 + 3)\n        group by substr(i_item_desc,1,30)\n            ,i_item_sk\n            ,d_date\n        having count(*) >4\n    ),\n    max_store_sales\n    as\n    (\n        select max(csales) tpcds_cmax\n        from (\n            select c_customer_sk\n                , sum(ss_quantity*ss_sales_price) csales\n            from store_sales \n                , customer \n                , date_dim\n            where ss_customer_sk = c_customer_sk \n                and ss_sold_date_sk = d_date_sk \n                and d_year in (1999,1999+1,1999+2,1999+3)\n            group by c_customer_sk\n        ) x\n    ),\n    best_ss_customer\n    as\n    (\n        select c_customer_sk\n            , sum(ss_quantity*ss_sales_price) ssales\n        from store_sales \n            , customer\n        where ss_customer_sk = c_customer_sk\n        group by c_customer_sk\n        having sum(ss_quantity*ss_sales_price) > (95/100.0) * (\n            select *\n            from max_store_sales\n        )\n    )\nselect c_last_name\n    , c_first_name\n    , sales\nfrom (\n        (\n            select c_last_name\n                , c_first_name\n                , sum(cs_quantity*cs_list_price) sales\n            from catalog_sales \n                , customer \n                , date_dim\n            where d_year = 1999 \n                and d_moy = 1 \n                and cs_sold_date_sk = d_date_sk \n                and cs_item_sk in (\n                    select item_sk\n                    from frequent_ss_items\n                ) \n                and cs_bill_customer_sk in (\n                    select c_customer_sk\n                    from best_ss_customer\n                ) \n                and cs_bill_customer_sk = c_customer_sk\n                group by c_last_name,c_first_name\n        )\n        union all\n        (\n            select c_last_name\n                , c_first_name\n                , sum(ws_quantity*ws_list_price) sales\n            from web_sales \n                , customer \n                , date_dim\n            where d_year = 1999 \n                and d_moy = 1 \n                and ws_sold_date_sk = d_date_sk \n                and ws_item_sk in (\n                    select item_sk\n                    from frequent_ss_items\n                ) \n                and ws_bill_customer_sk in (\n                    select c_customer_sk\n                    from best_ss_customer\n                ) \n                and ws_bill_customer_sk = c_customer_sk\n            group by c_last_name,c_first_name\n        )\n    ) y\norder by c_last_name,c_first_name,sales\nlimit 100 ;\n",
+          "id": 23
+        }
+      },
+      {
+        "_index": "queries",
+        "_id": "TLH14oUBp9oO7cbOzflL",
+        "_score": 74.306175,
+        "_ignored": [
+          "query.keyword"
+        ],
+        "_source": {
+          "query": "select c_last_name \n    , c_first_name \n    , c_salutation \n    , c_preferred_cust_flag \n    , ss_ticket_number \n    , cnt\nfrom (\n    select ss_ticket_number \n        , ss_customer_sk \n        , count(*) cnt\n    from store_sales\n        , date_dim\n        , store\n        , household_demographics\n    where store_sales.ss_sold_date_sk = date_dim.d_date_sk \n        and store_sales.ss_store_sk = store.s_store_sk \n        and store_sales.ss_hdemo_sk = household_demographics.hd_demo_sk \n        and (date_dim.d_dom between 1 and 3 or date_dim.d_dom between 25 and 28) \n        and (household_demographics.hd_buy_potential = '>10000' or household_demographics.hd_buy_potential = 'unknown') \n        and household_demographics.hd_vehicle_count > 0 \n        and (case when household_demographics.hd_vehicle_count > 0 then household_demographics.hd_dep_count/ household_demographics.hd_vehicle_count else null end)  > 1.2 \n        and date_dim.d_year in (2000,2000+1,2000+2) \n        and store.s_county in ('Mobile County','Maverick County','Huron County','Kittitas County', 'Fairfield County','Jackson County','Barrow County','Pennington County')\n    group by ss_ticket_number,ss_customer_sk\n) dn\n, customer\nwhere ss_customer_sk = c_customer_sk \n    and cnt between 15 and 20\norder by c_last_name\n    ,c_first_name\n    ,c_salutation\n    ,c_preferred_cust_flag desc\n;\n",
+          "id": 34
+        }
+      },
+      {
+        "_index": "queries",
+        "_id": "f7H14oUBp9oO7cbOzvkl",
+        "_score": 73.60726,
+        "_ignored": [
+          "query.keyword"
+        ],
+        "_source": {
+          "query": "select substr(r_reason_desc,1,20) as r\n    ,avg(ws_quantity) wq\n    ,avg(wr_refunded_cash) ref\n    ,avg(wr_fee) fee\nfrom web_sales\n    , web_returns\n    , web_page\n    , customer_demographics cd1\n    , customer_demographics cd2\n    , customer_address\n    , date_dim, reason \nwhere web_sales.ws_web_page_sk = web_page.wp_web_page_sk\n    and web_sales.ws_item_sk = web_returns.wr_item_sk\n    and web_sales.ws_order_number = web_returns.wr_order_number\n    and web_sales.ws_sold_date_sk = date_dim.d_date_sk and d_year = 1998\n    and cd1.cd_demo_sk = web_returns.wr_refunded_cdemo_sk \n    and cd2.cd_demo_sk = web_returns.wr_returning_cdemo_sk\n    and customer_address.ca_address_sk = web_returns.wr_refunded_addr_sk\n    and reason.r_reason_sk = web_returns.wr_reason_sk\n    and (\n        (\n            cd1.cd_marital_status = 'M'\n            and cd1.cd_marital_status = cd2.cd_marital_status\n            and cd1.cd_education_status = '4 yr Degree'\n            and cd1.cd_education_status = cd2.cd_education_status\n            and ws_sales_price between 100.00 and 150.00\n        ) or (\n            cd1.cd_marital_status = 'D'\n            and cd1.cd_marital_status = cd2.cd_marital_status\n            and cd1.cd_education_status = 'Primary' \n            and cd1.cd_education_status = cd2.cd_education_status\n            and ws_sales_price between 50.00 and 100.00\n        ) or (\n            cd1.cd_marital_status = 'U'\n            and cd1.cd_marital_status = cd2.cd_marital_status\n            and cd1.cd_education_status = 'Advanced Degree'\n            and cd1.cd_education_status = cd2.cd_education_status\n            and ws_sales_price between 150.00 and 200.00\n        )\n    ) and (\n        (\n            ca_country = 'United States'\n            and ca_state in ('KY', 'GA', 'NM')\n            and ws_net_profit between 100 and 200    \n        ) or (\n            ca_country = 'United States'\n            and ca_state in ('MT', 'OR', 'IN')\n            and ws_net_profit between 150 and 300    \n        ) or (\n            ca_country = 'United States'\n            and ca_state in ('WI', 'MO', 'WV')\n            and ws_net_profit between 50 and 250    \n        )\n    )\ngroup by r_reason_desc\norder by r, wq, ref, fee\nlimit 100\n;\n",
+          "id": 85
+        }
+      },
+      {
+        "_index": "queries",
+        "_id": "WrH14oUBp9oO7cbOzfmM",
+        "_score": 73.42748,
+        "_ignored": [
+          "query.keyword"
+        ],
+        "_source": {
+          "query": "select sum (ss_quantity)\nfrom store_sales\n    , store\n    , customer_demographics\n    , customer_address\n    , date_dim\nwhere store.s_store_sk = store_sales.ss_store_sk\n    and store_sales.ss_sold_date_sk = date_dim.d_date_sk and d_year = 1998\n    and\n    (\n        ( customer_demographics.cd_demo_sk = store_sales.ss_cdemo_sk\n            and cd_marital_status = 'M'\n            and cd_education_status = '4 yr Degree'\n            and ss_sales_price between 100.00 and 150.00 \n        ) or\n        ( customer_demographics.cd_demo_sk = store_sales.ss_cdemo_sk\n            and cd_marital_status = 'M'\n            and cd_education_status = '4 yr Degree'\n            and ss_sales_price between 50.00 and 100.00 \n        ) or\n        ( customer_demographics.cd_demo_sk = store_sales.ss_cdemo_sk\n            and cd_marital_status = 'M'\n            and cd_education_status = '4 yr Degree'\n            and ss_sales_price between 150.00 and 200.00 \n        )\n    ) and\n    (\n        ( store_sales.ss_addr_sk = customer_address.ca_address_sk\n            and ca_country = 'United States'\n            and ca_state in ('KY', 'GA', 'NM')\n            and ss_net_profit between 0 and 2000 \n        ) or\n        ( store_sales.ss_addr_sk = customer_address.ca_address_sk\n            and ca_country = 'United States'\n            and ca_state in ('MT', 'OR', 'IN')\n            and ss_net_profit between 150 and 3000 \n        ) or\n        ( store_sales.ss_addr_sk = customer_address.ca_address_sk\n            and ca_country = 'United States'\n            and ca_state in ('WI', 'MO', 'WV')\n            and ss_net_profit between 50 and 25000 \n        )   \n    )\n;\n\n",
+          "id": 48
+        }
+      },
+      {
+        "_index": "queries",
+        "_id": "c7H14oUBp9oO7cbOzfn8",
+        "_score": 69.68564,
+        "_ignored": [
+          "query.keyword"
+        ],
+        "_source": {
+          "query": "select c_last_name\n    ,c_first_name\n    ,c_salutation\n    ,c_preferred_cust_flag \n    ,ss_ticket_number\n    ,cnt \nfrom(\n    select ss_ticket_number\n        ,ss_customer_sk\n        ,count(*) cnt\n    from store_sales\n        ,date_dim\n        ,store,household_demographics\n    where store_sales.ss_sold_date_sk = date_dim.d_date_sk\n        and store_sales.ss_store_sk = store.s_store_sk  \n        and store_sales.ss_hdemo_sk = household_demographics.hd_demo_sk\n        and date_dim.d_dom between 1 and 2 \n        and (household_demographics.hd_buy_potential = '1001-5000' or\n               household_demographics.hd_buy_potential = '5001-10000')\n        and household_demographics.hd_vehicle_count > 0\n        and case when household_demographics.hd_vehicle_count > 0 then \n                household_demographics.hd_dep_count/ household_demographics.hd_vehicle_count else null end > 1\n        and date_dim.d_year in (1998,1998+1,1998+2)\n        and store.s_county in ('Kittitas County','Adams County','Richland County','Furnas County')\n group by ss_ticket_number\n    ,ss_customer_sk\n) dj, customer\nwhere dj.ss_customer_sk = customer.c_customer_sk\n    and cnt between 1 and 5\norder by cnt desc\n;\n",
+          "id": 73
+        }
+      },
+      {
+        "_index": "queries",
+        "_id": "YLH14oUBp9oO7cbOzfmn",
+        "_score": 67.89616,
+        "_ignored": [
+          "query.keyword"
+        ],
+        "_source": {
+          "query": "with my_customers as\n(\n    select distinct c_customer_sk \n        , c_current_addr_sk\n    from (\n            select cs_sold_date_sk sold_date_sk\n                , cs_bill_customer_sk customer_sk\n                , cs_item_sk item_sk\n            from catalog_sales\n        union all\n            select ws_sold_date_sk sold_date_sk\n                , ws_bill_customer_sk customer_sk\n                , ws_item_sk item_sk\n            from web_sales \n    ) cs_or_ws_sales\n    , item\n    , date_dim\n    , customer\n    where sold_date_sk = d_date_sk \n        and item_sk = i_item_sk \n        and i_category = 'Jewelry' \n        and i_class = 'consignment' \n        and c_customer_sk = cs_or_ws_sales.customer_sk \n        and d_moy = 3 and d_year = 1999 \n)\n, my_revenue as\n(\n    select c_customer_sk\n        , sum(ss_ext_sales_price) as revenue\n    from my_customers\n        , store_sales\n        , customer_address\n        , store, date_dim\n    where c_current_addr_sk = ca_address_sk \n        and ca_county = s_county \n        and ca_state = s_state \n        and ss_sold_date_sk = d_date_sk \n        and c_customer_sk = ss_customer_sk \n        and d_month_seq between (\n            select distinct d_month_seq+1\n            from date_dim\n            where d_year = 1999 \n                and d_moy = 3\n            ) \n        and (\n            select distinct d_month_seq+3\n            from date_dim\n            where d_year = 1999 \n                and d_moy = 3\n        )\n        group by c_customer_sk \n)\n, segments as\n(\n    select cast((revenue/50) as int) as segment\n    from my_revenue \n)\nselect segment\n    , count(*) as num_customers\n    , segment*50 as segment_base\nfrom segments\ngroup by segment\norder by segment\n    , num_customers\nlimit 100\n;\n",
+          "id": 54
+        }
+      }
+    ]
+  }
+}

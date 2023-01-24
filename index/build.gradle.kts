@@ -10,6 +10,7 @@ dependencies {
     testImplementation("org.scalatestplus:junit-4-13_2.13:3.2.2.0")
 
     implementation(project(":common"))
+    implementation(project(":snowflake"))
 
     implementation("com.sksamuel.elastic4s:elastic4s-client-esjava_2.13:8.5.2")
     implementation("com.sksamuel.elastic4s:elastic4s-json-json4s_2.13:8.5.2")

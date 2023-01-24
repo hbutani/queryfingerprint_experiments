@@ -2,15 +2,18 @@ package org.hatke.queryfingerprint.index
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.{ObjectMapper, PropertyNamingStrategies}
-import com.sksamuel.elastic4s.{ElasticClient, RequestFailure, RequestSuccess, Response}
+import com.sksamuel.elastic4s.{ElasticClient, ElasticDsl, RequestFailure, RequestSuccess, Response}
 import com.sksamuel.elastic4s.http.JavaClient
 import com.sksamuel.elastic4s.requests.cluster.NodeUsageResponse
+import com.sksamuel.elastic4s.requests.indexes.{CreateIndexResponse, IndexResponse}
+import com.sksamuel.elastic4s.requests.mappings.MappingDefinition
 import com.sksamuel.elastic4s.requests.searches.SearchResponse
 import org.apache.http.HttpHost
 import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
 import org.apache.http.impl.client.BasicCredentialsProvider
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder
 import org.elasticsearch.client.{RestClient, RestClientBuilder}
+import org.hatke.queryfingerprint.index.QueryFingerprintSample.client
 
 import java.io.{BufferedInputStream, ByteArrayInputStream, FileInputStream}
 import java.security.KeyStore
@@ -19,8 +22,8 @@ import javax.net.ssl.{SSLContext, TrustManagerFactory}
 
 object ESClientUtils extends App {
 
-  def fileBytes(path : String) : Array[Byte] = {
-    scala.util.Using(new FileInputStream(path)) {fIS => fIS.readAllBytes()}.get
+  def fileBytes(path: String): Array[Byte] = {
+    scala.util.Using(new FileInputStream(path)) { fIS => fIS.readAllBytes() }.get
   }
 
   def createSslContextFromCa(certificateBytes: Array[Byte]): SSLContext = try {
@@ -39,20 +42,20 @@ object ESClientUtils extends App {
       throw new RuntimeException(e)
   }
 
-  def setupHttpClient(host : String = "localhost",
-                  port : Int = 59005,
-                  userName : String = "elastic",
-                  password : String = "s3cret",
-                  certFile : String = System.getProperty("user.home") + "/learn/elastic_search/es_testcontainer_http_ca.crt"
+  def setupHttpClient(host: String = "localhost",
+                      port: Int = 9200,
+                      userName: String = "elastic",
+                      password: String = "s3cret",
+                      certFile: String = System.getProperty("user.home") + "/learn/elastic_search/es_testcontainer_http_ca.crt"
 
-                 ) = {
-    val host = new HttpHost("localhost", port, "https")
+                     ) = {
+    val host = new HttpHost("localhost", port, "http")
     val credentialsProvider = new BasicCredentialsProvider
     credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(userName, password))
     val builder = RestClient.builder(host)
 
     builder.setHttpClientConfigCallback((clientBuilder: HttpAsyncClientBuilder) => {
-      clientBuilder.setSSLContext(createSslContextFromCa(fileBytes(certFile)))
+      //      clientBuilder.setSSLContext(createSslContextFromCa(fileBytes(certFile)))
       clientBuilder.setDefaultCredentialsProvider(credentialsProvider)
       clientBuilder
     })
