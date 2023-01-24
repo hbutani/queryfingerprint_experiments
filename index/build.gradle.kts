@@ -12,9 +12,13 @@ dependencies {
     implementation(project(":common"))
 
     implementation("com.sksamuel.elastic4s:elastic4s-client-esjava_2.13:8.5.2")
+    implementation("com.sksamuel.elastic4s:elastic4s-json-json4s_2.13:8.5.2")
     testImplementation("com.sksamuel.elastic4s:elastic4s-testkit_2.13:8.5.2")
 
     testImplementation("org.testcontainers:elasticsearch:1.17.6")
+
+    implementation("org.json4s:json4s-ext_2.13:4.1.0-M2")
+    implementation("org.json4s:json4s-jackson_2.13:4.1.0-M2")
 }
 
 scala {

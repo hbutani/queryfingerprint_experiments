@@ -9,3 +9,8 @@ build
 lib/**
 
 .idea/**
+
+**/target
+
+**/.DS_Store
+dev/docker/docker-data/**

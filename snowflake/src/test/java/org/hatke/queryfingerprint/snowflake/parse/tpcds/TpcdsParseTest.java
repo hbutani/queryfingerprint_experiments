@@ -16,7 +16,7 @@ public class TpcdsParseTest extends TestBase {
 
     Logger logger = Logger.getLogger(TpcdsParseTest.class.getName());
 
-    ImmutableSet<String> blackListQueries = ImmutableSet.of("query8", "query34", "query44", "query73", "query88", "query90");
+    ImmutableSet<String> blackListQueries = ImmutableSet.of("query8");
 
     @Test
     void parseTpcdsQueries() throws IOException {
