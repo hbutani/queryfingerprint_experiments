@@ -4,24 +4,10 @@ import com.sksamuel.elastic4s.requests.indexes.{CreateIndexResponse, IndexMappin
 import org.hatke.queryfingerprint.model.Queryfingerprint
 import com.sksamuel.elastic4s.ElasticDsl
 import com.sksamuel.elastic4s.fields.ObjectField
+import org.hatke.queryfingerprint.index
+import org.hatke.queryfingerprint.index.search.FirstSearchDesign
 
-import java.util.UUID
 
-/**
- * 1. Map TestQueryFingerPrint to an Index    DONE
- *    - Fix Mapping  DONE
- * 2. Manually save 10 TPCDS queries    DONE
- *    - Add Group By, Order By, FuncApp?
- * 3. TestJoin json
- *      only single lCol, rCol
- *      joinType_leftTable_rightTable
- *      joinType_leftTable_rightTable_lCol_rCol
- * 3. Try Search interface for TPCDS queries
- *    - Given a TestQueryFingerPrint map to a Search Query.
- * 4. Given a Trei
- *    - Names -> Table, Column
- *    - Values -> Column
- */
 
 object QueryFingerprintSample extends App {
 
@@ -107,6 +93,10 @@ object QueryFingerprintSample extends App {
 
   }
 
+  def searchQFP(searchQFP : TestQueryFingerPrint, explain : Boolean) : IndexedSeq[TestQueryFingerPrint] = {
+    search.search(searchQFP, new FirstSearchDesign, explain)(client)
+  }
+
   def close() : Unit = {
     client.close()
   }
@@ -122,9 +112,17 @@ object QueryFingerprintSample extends App {
 
     println(showMapping().mkString("\n"))
 
-    val rQFPs = searchAll
+    // val rQFPs = searchAll
 
+    var rQFPs = searchQFP(index.search.sampleQ1, false)
+   println(rQFPs.mkString("\n"))
+
+    rQFPs = searchQFP(TestQueryFingerPrint.tpcdsQFP("q1"), true)
     println(rQFPs.mkString("\n"))
+
+    rQFPs = searchQFP(TestQueryFingerPrint.tpcdsQFP("q10"), true)
+    println(rQFPs.mkString("\n"))
+
   } finally {
     close()
   }

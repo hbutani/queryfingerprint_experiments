@@ -1,6 +1,9 @@
 package org.hatke.queryfingerprint.index
 
 import com.sksamuel.elastic4s.requests.mappings.MappingDefinition
+import com.sksamuel.elastic4s.requests.searches.queries.Query
+import com.sksamuel.elastic4s.requests.searches.queries.compound.BoolQuery
+import com.sksamuel.elastic4s.requests.searches.term.TermQuery
 import com.sksamuel.elastic4s.{Hit, HitReader, Indexable}
 import org.hatke.queryfingerprint.json.JsonUtils
 import org.json4s.jackson.Serialization
@@ -39,6 +42,14 @@ case class TestPredicate(column: String, operator: String, functionApplication: 
       s"${column} ${operator}"
     ) ++ functionApplication.map(f => s"${column} ${operator} ${f}").toSeq
   }
+
+  def searchQuery: Query = {
+    val termQs = for (iElem <- indexElements) yield {
+      TermQuery("predicates", iElem)
+    }
+
+    BoolQuery().should(termQs)
+  }
 }
 
 case class TestJoin(leftTable: String,
@@ -54,6 +65,14 @@ case class TestJoin(leftTable: String,
       s"${leftTable} ${rightTable} ${joinType} ${leftColumn} ${rightColumn}"
     )
   }
+
+  def searchQuery : Query = {
+    val termQs = for(iElem <- indexElements) yield {
+      TermQuery("joins", iElem)
+    }
+
+    BoolQuery().should(termQs)
+  }
 }
 
 case class TestFunctionApplication(functionName: String, column: String) {
@@ -62,6 +81,21 @@ case class TestFunctionApplication(functionName: String, column: String) {
   }
 
   def isAggregate: Boolean = TestFunctionApplication.AGG_FUNCTIONS.contains(functionName)
+
+  /**
+   *
+   * @return (query for scalar funcs, query for agg funcs)
+   */
+  def searchQuery: (Option[Query], Option[Query]) = {
+
+    val termQs = for (iElem <- indexElements) yield {
+      TermQuery("functionApplications", iElem)
+    }
+
+    (if (!isAggregate)  Some(BoolQuery().should(termQs)) else None,
+      if (isAggregate)  Some(BoolQuery().should(termQs)) else None
+      )
+  }
 }
 
 object TestFunctionApplication {
@@ -88,6 +122,10 @@ case class TestQueryFingerPrint(uuid: String,
       functionApplications.map(_.isAggregate).size
     )
   }
+
+  def searchTermsForTables : Set[TermQuery] = tablesReferenced.map(g => TermQuery("tablesReferenced", g))
+  def searchTermsForGroupCols : Set[TermQuery] = groupedColumns.map(g => TermQuery("groupedColumns", g))
+  def searchTermsForOrderCols : Set[TermQuery] = orderedColumns.map(g => TermQuery("orderedColumns", g))
 
 }
 
@@ -463,7 +501,8 @@ object TestQueryFingerPrint {
         TestPredicate(column = "TPCDS.CUSTOMER_ADDRESS.CA_STATE", operator = "in")
       ),
       joins = Set(
-        TestJoin(leftTable = "TPCDS.CATALOG_SALES", rightTable = "TPCDS.DATE_DIM", leftColumn = "TPCDS.CATALOG_SALES.CS_SOLD_DATE_SK", rightColumn = "TPCDS.DATE_DIM.D_DATE_SK", joinType = TestJoinType.inner), TestJoin(leftTable = "TPCDS.CUSTOMER", rightTable = "TPCDS.CUSTOMER_DEMOGRAPHICS", leftColumn = "TPCDS.CUSTOMER.C_CURRENT_CDEMO_SK", rightColumn = "TPCDS.CUSTOMER_DEMOGRAPHICS.CD_DEMO_SK", joinType = TestJoinType.inner), TestJoin(leftTable = "TPCDS.CATALOG_SALES", rightTable = "TPCDS.ITEM", leftColumn = "TPCDS.CATALOG_SALES.CS_ITEM_SK", rightColumn = "TPCDS.ITEM.I_ITEM_SK", joinType = TestJoinType.inner), TestJoin(leftTable = "TPCDS.CATALOG_SALES", rightTable = "TPCDS.CUSTOMER", leftColumn = "TPCDS.CATALOG_SALES.CS_BILL_CUSTOMER_SK", rightColumn = "TPCDS.CUSTOMER.C_CUSTOMER_SK", joinType = TestJoinType.inner), TestJoin(leftTable = "TPCDS.CATALOG_SALES", rightTable = "TPCDS.CUSTOMER_DEMOGRAPHICS", leftColumn = "TPCDS.CATALOG_SALES.CS_BILL_CDEMO_SK", rightColumn = "TPCDS.CUSTOMER_DEMOGRAPHICS.CD_DEMO_SK", joinType = TestJoinType.inner), TestJoin(leftTable = "TPCDS.CUSTOMER", rightTable = "TPCDS.CUSTOMER_ADDRESS", leftColumn = "TPCDS.CUSTOMER.C_CURRENT_ADDR_SK", rightColumn = "TPCDS.CUSTOMER_ADDRESS.CA_ADDRESS_SK", joinType = TestJoinType.inner)
+        TestJoin(leftTable = "TPCDS.CATALOG_SALES", rightTable = "TPCDS.DATE_DIM", leftColumn = "TPCDS.CATALOG_SALES.CS_SOLD_DATE_SK", rightColumn = "TPCDS.DATE_DIM.D_DATE_SK", joinType = TestJoinType.inner),
+        TestJoin(leftTable = "TPCDS.CUSTOMER", rightTable = "TPCDS.CUSTOMER_DEMOGRAPHICS", leftColumn = "TPCDS.CUSTOMER.C_CURRENT_CDEMO_SK", rightColumn = "TPCDS.CUSTOMER_DEMOGRAPHICS.CD_DEMO_SK", joinType = TestJoinType.inner), TestJoin(leftTable = "TPCDS.CATALOG_SALES", rightTable = "TPCDS.ITEM", leftColumn = "TPCDS.CATALOG_SALES.CS_ITEM_SK", rightColumn = "TPCDS.ITEM.I_ITEM_SK", joinType = TestJoinType.inner), TestJoin(leftTable = "TPCDS.CATALOG_SALES", rightTable = "TPCDS.CUSTOMER", leftColumn = "TPCDS.CATALOG_SALES.CS_BILL_CUSTOMER_SK", rightColumn = "TPCDS.CUSTOMER.C_CUSTOMER_SK", joinType = TestJoinType.inner), TestJoin(leftTable = "TPCDS.CATALOG_SALES", rightTable = "TPCDS.CUSTOMER_DEMOGRAPHICS", leftColumn = "TPCDS.CATALOG_SALES.CS_BILL_CDEMO_SK", rightColumn = "TPCDS.CUSTOMER_DEMOGRAPHICS.CD_DEMO_SK", joinType = TestJoinType.inner), TestJoin(leftTable = "TPCDS.CUSTOMER", rightTable = "TPCDS.CUSTOMER_ADDRESS", leftColumn = "TPCDS.CUSTOMER.C_CURRENT_ADDR_SK", rightColumn = "TPCDS.CUSTOMER_ADDRESS.CA_ADDRESS_SK", joinType = TestJoinType.inner)
       )
     ),
     "q19" -> TestQueryFingerPrint(
