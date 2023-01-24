@@ -110,7 +110,8 @@ case class TestQueryFingerPrint(uuid: String,
                                 joins: Set[TestJoin],
                                 functionApplications: Set[TestFunctionApplication] = Set.empty,
                                 groupedColumns: Set[String] = Set.empty,
-                                orderedColumns: Set[String] = Set.empty
+                                orderedColumns: Set[String] = Set.empty,
+                                id : Option[Int] = None
                                ) {
 
   @transient lazy val featureVector: Array[Int] = {
@@ -178,6 +179,7 @@ object TestQueryFingerPrint {
       keywordField("scannedPredicates"),
       keywordField("functionApplications"),
       keywordField("joins"),
+      intField("id"),
       DenseVectorField("featureVector", FEATURE_VECTOR_DIM),
       textField(SOURCE_FIELD).index(false)
     )

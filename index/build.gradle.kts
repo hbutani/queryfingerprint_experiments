@@ -11,6 +11,7 @@ dependencies {
 
     implementation(project(":common"))
     implementation(project(":snowflake"))
+    implementation(files("$projectDir/../lib/gudusoft.gsqlparser-2.6.1.1.jar"))
 
     implementation("com.sksamuel.elastic4s:elastic4s-client-esjava_2.13:8.5.2")
     implementation("com.sksamuel.elastic4s:elastic4s-json-json4s_2.13:8.5.2")
