@@ -14,7 +14,7 @@ object FingerprintExample extends App {
   lazy val client = ESClientUtils.setupHttpClient()
   private val sqlEnv = new TPCDSSQLEnv(EDbVendor.dbvsnowflake)
 
-  createTpcdsFingerprintIndex()
+//  createTpcdsFingerprintIndex()
 
   private val response = searchQueryFingerprint(10)
   println(response)

@@ -3,6 +3,7 @@ package org.hatke.queryfingerprint.model;
 import com.google.common.collect.ImmutableSet;
 
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -11,11 +12,11 @@ public class Queryfingerprint implements Serializable {
 
     private static final long serialVersionUID = 4446331006878710519L;
 
-    private final UUID uuid;
+    private final UUID hash;
 
     private final String sqlText;
 
-    private final Optional<UUID> parentQB;
+    private Optional<UUID> parentQB;
 
     private final QBType type;
 
@@ -93,8 +94,8 @@ public class Queryfingerprint implements Serializable {
     private final ImmutableSet<UUID> referencedQBlocks;
 
 
-    public Queryfingerprint(UUID uuid, String sqlText, boolean isCTE,
-                            Optional<UUID> parentQB, QBType type, ImmutableSet<String> tablesReferenced,
+    public Queryfingerprint(String sqlText, boolean isCTE,
+                            QBType type, ImmutableSet<String> tablesReferenced,
                             ImmutableSet<String> columnsScanned,
                             ImmutableSet<String> columnsFiltered,
                             ImmutableSet<String> columnsScanFiltered,
@@ -107,9 +108,7 @@ public class Queryfingerprint implements Serializable {
                             ImmutableSet<String> columnsGroupBy,
                             ImmutableSet<String> columnsOrderBy
     ) {
-        this.uuid = uuid;
         this.sqlText = sqlText;
-        this.parentQB = parentQB;
         this.type = type;
         this.tablesReferenced = tablesReferenced;
         this.columnsScanned = columnsScanned;
@@ -124,14 +123,42 @@ public class Queryfingerprint implements Serializable {
         this.isCTE = isCTE;
         this.groupedColumns = columnsGroupBy;
         this.orderedColumns = columnsOrderBy;
+        this.hash = createUniqueHash();
+        this.parentQB = Optional.empty();
     }
 
-    public UUID getUuid() {
-        return uuid;
+    private UUID createUniqueHash() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(this.type);
+        sb.append(tablesReferenced.stream().sorted().reduce("", String::concat));
+        sb.append(columnsScanned.stream().sorted().reduce("", String::concat));
+        sb.append(columnsFiltered.stream().sorted().reduce("", String::concat));
+        sb.append(columnsScanFiltered.stream().sorted().reduce("", String::concat));
+        sb.append(predicates.stream().map(e -> e.toString()).sorted().reduce("", String::concat));
+        sb.append(scanPredicates.stream().map(e -> e.toString()).sorted().reduce("", String::concat));
+        sb.append(functionApplications.stream().map(e -> e.toString()).sorted().reduce("", String::concat));
+        sb.append(joins.stream().map(e -> e.toString()).sorted().reduce("", String::concat));
+        sb.append(correlatedColumns.stream().sorted().reduce("", String::concat));
+        sb.append(groupedColumns.stream().sorted().reduce("", String::concat));
+        sb.append(orderedColumns.stream().sorted().reduce("", String::concat));
+        sb.append(isCTE);
+        return UUID.nameUUIDFromBytes(sb.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    public UUID getHash() {
+        return hash;
+    }
+
+    public String getSqlText() {
+        return sqlText;
     }
 
     public Optional<UUID> getParentQB() {
         return parentQB;
+    }
+
+    public void setParentQB(UUID uuid) {
+        this.parentQB = Optional.of(uuid);
     }
 
     public QBType getType() {
@@ -193,7 +220,7 @@ public class Queryfingerprint implements Serializable {
     @Override
     public String toString() {
         return "Queryfingerprint{" +
-                "\n  uuid=" + uuid +
+                "\n  hash=" + hash +
                 "\n sqlText=" + sqlText +
                 "\n isCTE=" + isCTE +
                 Utils.optionalInfoString("\n  parentQB", parentQB) +

@@ -149,6 +149,7 @@ object TestQueryFingerPrint {
         ("functionApplications" -> qfp.functionApplications.flatMap(_.indexElements)) ~
         ("groupedColumns" -> qfp.groupedColumns) ~
         ("orderedColumns" -> qfp.orderedColumns) ~
+        ("id" -> qfp.id) ~
         ("featureVector" -> asJValue(qfp.featureVector)) ~
         (SOURCE_FIELD -> JsonUtils.asJson(qfp)(jsonFormat))
 

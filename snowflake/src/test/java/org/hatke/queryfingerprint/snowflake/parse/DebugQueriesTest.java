@@ -25,6 +25,7 @@ public class DebugQueriesTest extends TestBase {
         assertEquals(fps.size(), 1);
 
         Queryfingerprint qf0 = fps.get(0);
+        assertEquals(qf0.getHash().toString(), "1504fdb9-ed44-3cde-9521-763663da5d5b");
         assertEquals(qf0.getTablesReferenced(), ImmutableSet.of("TPCDS.CUSTOMER_ADDRESS"));
         assertEquals(qf0.getColumnsScanned(), ImmutableSet.of("TPCDS.CUSTOMER_ADDRESS.CA_ZIP"));
         assertEquals(qf0.getColumnsFiltered(), ImmutableSet.of("TPCDS.CUSTOMER_ADDRESS.CA_ZIP"));
