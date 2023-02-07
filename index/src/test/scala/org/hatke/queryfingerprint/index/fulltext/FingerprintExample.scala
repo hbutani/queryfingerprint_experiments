@@ -16,18 +16,41 @@ object FingerprintExample extends App {
 
 //  createTpcdsFingerprintIndex()
 
-  private val response = searchQueryFingerprint(10)
-  println(response)
+//  private val response = searchQueryFingerprint(10)
+//  println(response)
+  analyzeFingerprints()
+
+  private def analyzeFingerprints(): Unit = {
+    val fps = (1 to 102).flatMap { i =>
+      readFingerprint(i)
+    }.groupBy(_.getHash).view.mapValues(v => (v.size, v)).toList.sortBy(-_._2._1)
+
+    println(fps)
+  }
 
   private def createTpcdsFingerprintIndex() = {
     ESUtils.deleteIndex(client, indexName)
     ESUtils.createIndex(client, indexName, TestQueryFingerPrint.elasticMapping)
     (1 to 102).foreach {
-      i => readFingerprint(i).foreach(fp => indexFingerprint(fp))
+      i => readTestFingerprint(i).foreach(fp => indexFingerprint(fp))
     }
   }
 
-  private def readFingerprint(id: Int): List[TestQueryFingerPrint] = {
+  private def readFingerprint(id : Int) : List[Queryfingerprint] = {
+    import scala.jdk.CollectionConverters._
+    try {
+      val query = TpcdsUtils.readTpcdsQuery(s"query$id")
+      val qa = new QueryAnalysis(sqlEnv, query)
+      val qfpB = new QueryfingerprintBuilder(qa)
+      val fps = qfpB.build
+      fps.asScala.toList
+    } catch {
+      case e: IllegalArgumentException =>
+        List.empty
+    }
+  }
+
+  private def readTestFingerprint(id: Int): List[TestQueryFingerPrint] = {
     import scala.jdk.CollectionConverters._
     try {
       val query = TpcdsUtils.readTpcdsQuery(s"query$id")
@@ -56,7 +79,7 @@ object FingerprintExample extends App {
     }.toSet
 
     TestQueryFingerPrint(
-      uuid = fp.getUuid.toString,
+      uuid = fp.getHash.toString,
       tablesReferenced = fp.getTablesReferenced.asScala.toSet,
       columnsScanned = fp.getColumnsScanned.asScala.toSet,
       columnsFiltered = fp.getColumnsFiltered.asScala.toSet,
@@ -65,7 +88,8 @@ object FingerprintExample extends App {
       functionApplications = applications,
       groupedColumns = fp.getGroupedColumns.asScala.toSet,
       orderedColumns = fp.getOrderedColumns.asScala.toSet,
-      id = Some(id)
+      id = Some(id),
+      sqlText = fp.getSqlText
     )
   }
 

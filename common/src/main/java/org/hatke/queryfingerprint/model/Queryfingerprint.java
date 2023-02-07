@@ -141,6 +141,7 @@ public class Queryfingerprint implements Serializable {
         sb.append(correlatedColumns.stream().sorted().reduce("", String::concat));
         sb.append(groupedColumns.stream().sorted().reduce("", String::concat));
         sb.append(orderedColumns.stream().sorted().reduce("", String::concat));
+        sb.append(referencedQBlocks.stream().map(e -> e.toString()).sorted().reduce("", String::concat));
         sb.append(isCTE);
         return UUID.nameUUIDFromBytes(sb.toString().getBytes(StandardCharsets.UTF_8));
     }

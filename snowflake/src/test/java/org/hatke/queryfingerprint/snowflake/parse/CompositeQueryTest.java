@@ -34,7 +34,7 @@ public class CompositeQueryTest extends TestBase {
 
     @Test
     void testTpcdsQuery8() throws IOException {
-        String query = readTpcdsQuery("query8");
+        String query = readTpcdsQuery("query58");
 
         QueryAnalysis qa = new QueryAnalysis(sqlEnv, query);
         QueryfingerprintBuilder qfpB = new QueryfingerprintBuilder(qa);

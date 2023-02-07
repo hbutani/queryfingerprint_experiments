@@ -111,7 +111,8 @@ case class TestQueryFingerPrint(uuid: String,
                                 functionApplications: Set[TestFunctionApplication] = Set.empty,
                                 groupedColumns: Set[String] = Set.empty,
                                 orderedColumns: Set[String] = Set.empty,
-                                id : Option[Int] = None
+                                id : Option[Int] = None,
+                                sqlText : String = ""
                                ) {
 
   @transient lazy val featureVector: Array[Int] = {

@@ -61,4 +61,15 @@ public class DebugQueriesTest extends TestBase {
         }
     }
 
+    @Test
+    void testSubQuery58() throws IOException {
+        String q = readTpcdsQuery("query58");
+
+        QueryAnalysis qa = new QueryAnalysis(sqlEnv, q);
+        QueryfingerprintBuilder qfpB = new QueryfingerprintBuilder(qa);
+        ImmutableList<Queryfingerprint> fps = qfpB.build();
+
+        assertEquals(fps.size(), 3);
+    }
+
 }
