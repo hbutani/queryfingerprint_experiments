@@ -45,18 +45,24 @@ object ESClientUtils extends App {
   def setupHttpClient(host: String = "localhost",
                       port: Int = 9200,
                       userName: String = "elastic",
-                      password: String = "s3cret",
+                      _password: String = "s3cret",
                       certFile: String = System.getProperty("user.home") + "/learn/elastic_search/es_testcontainer_http_ca.crt"
 
                      ) = {
-    val host = new HttpHost("localhost", port, "http")
+
+    val scheme = Option(System.getenv("QFP_ES_HTTP_SCHEME")).getOrElse("http")
+    val password = Option(System.getenv("QFP_ES_PASSWORD")).getOrElse(_password)
+
+    val host = new HttpHost("localhost", port, scheme)
     val credentialsProvider = new BasicCredentialsProvider
     credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(userName, password))
     val builder = RestClient.builder(host)
 
     builder.setHttpClientConfigCallback((clientBuilder: HttpAsyncClientBuilder) => {
-      //      clientBuilder.setSSLContext(createSslContextFromCa(fileBytes(certFile)))
-      clientBuilder.setDefaultCredentialsProvider(credentialsProvider)
+      clientBuilder.setSSLContext(createSslContextFromCa(fileBytes(certFile)))
+      if (scheme == "https") {
+        clientBuilder.setDefaultCredentialsProvider(credentialsProvider)
+      }
       clientBuilder
     })
 
