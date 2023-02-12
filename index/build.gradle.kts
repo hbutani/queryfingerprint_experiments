@@ -10,7 +10,7 @@ dependencies {
     testImplementation("org.scalatestplus:junit-4-13_2.13:3.2.2.0")
 
     implementation(project(":common"))
-    implementation(project(":snowflake"))
+    testImplementation(project(":snowflake"))
     implementation(files("$projectDir/../lib/gudusoft.gsqlparser-2.6.1.1.jar"))
 
     implementation("com.sksamuel.elastic4s:elastic4s-client-esjava_2.13:8.5.2")
