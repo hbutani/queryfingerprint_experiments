@@ -1,10 +1,10 @@
-package org.hatke.queryfingerprint.index.search
-
+package org.hatke.queryfingerprint.search
 import com.sksamuel.elastic4s.handlers.searches.queries.QueryBuilderFn
 import com.sksamuel.elastic4s.requests.searches.queries.{Query, RawQuery}
 import com.sksamuel.elastic4s.requests.searches.queries.compound.BoolQuery
 import com.sksamuel.elastic4s.requests.searches.term.TermQuery
-import org.hatke.queryfingerprint.index.TestQueryFingerPrint
+import org.hatke.queryfingerprint.index.IndexableElem.{FuncAppIdxElem, JoinIdxElem, PredicateIdxElem}
+import org.hatke.queryfingerprint.model.{Queryfingerprint => QFP}
 import org.hatke.queryfingerprint.json.JsonUtils
 
 object FirstSearchDesign {
@@ -16,17 +16,17 @@ object FirstSearchDesign {
     val fV = JsonUtils.asJson(searchFV)
 
     val scriptQ = s"""
-       |{
-       |    "script_score": {
-       |      "query" : ${qStr},
-       |      "script": {
-       |        "source": "cosineSimilarity(params.featureVector, 'featureVector') * _score",
-       |        "params": {
-       |          "featureVector": ${fV}
-       |        }
-       |      }
-       |    }
-       |}""".stripMargin
+                     |{
+                     |    "script_score": {
+                     |      "query" : ${qStr},
+                     |      "script": {
+                     |        "source": "cosineSimilarity(params.featureVector, 'featureVector') * _score",
+                     |        "params": {
+                     |          "featureVector": ${fV}
+                     |        }
+                     |      }
+                     |    }
+                     |}""".stripMargin
 
     RawQuery(scriptQ)
   }
@@ -35,9 +35,11 @@ object FirstSearchDesign {
 
 class FirstSearchDesign extends SearchBuilder {
 
-  private var searchQFP: TestQueryFingerPrint = null
+  import scala.jdk.CollectionConverters._
 
-  def searchQFP(qfp: TestQueryFingerPrint): SearchBuilder = {
+  private var searchQFP: QFP = null
+
+  def searchQFP(qfp: QFP): SearchBuilder = {
     this.searchQFP = qfp
     this
   }
@@ -69,11 +71,11 @@ class FirstSearchDesign extends SearchBuilder {
       }
     }
 
-    lazy val numJoins = searchQFP.joins.size
-    lazy val numGBys = searchQFP.groupedColumns.size
+    lazy val numJoins = searchQFP.getJoins.size
+    lazy val numGBys = searchQFP.getGroupedColumns.size
     lazy val numAggCals = aggFuncTerms.size
-    lazy val numPredicates = searchQFP.predicates.size
-    lazy val numOrderBys = searchQFP.orderedColumns.size
+    lazy val numPredicates = searchQFP.getPredicates.size
+    lazy val numOrderBys = searchQFP.getOrderedColumns.size
 
     lazy val (joinBoost : Boolean, gByBoost : Boolean, predicateBoost : Boolean, orderByBoost) = {
       var jB, gbB, pB, oB : Boolean = false
@@ -108,27 +110,30 @@ class FirstSearchDesign extends SearchBuilder {
     }
 
 
-    lazy val predicateSearchTerms = for (j <- searchQFP.predicates) yield {
+    lazy val predicateSearchTerms = for (j <- searchQFP.getPredicates.asScala) yield {
       j.searchQuery
     }
 
-    lazy val predicatesMinShouldMatch : Int = if (predicateBoost) minShouldMatch(searchQFP.joins.size) else 0
+    lazy val predicatesMinShouldMatch : Int = if (predicateBoost) minShouldMatch(searchQFP.getJoins.size) else 0
 
-    lazy val joinSearchTerms = for (j <- searchQFP.joins) yield {
+    lazy val joinSearchTerms = for (j <- searchQFP.getJoins.asScala) yield {
       j.searchQuery
     }
 
-    lazy val joinMinShouldMatch = minShouldMatch(searchQFP.joins.size)
+    lazy val joinMinShouldMatch = minShouldMatch(searchQFP.getJoins.size)
 
     lazy val (scalarFuncTerms : Set[Query], aggFuncTerms : Set[Query]) = {
       var scalarTerms = Set.empty[Query]
       var aggTerms = Set.empty[Query]
 
-      for (fA <- searchQFP.functionApplications) {
-        val (s, a) = fA.searchQuery
+      for (fA <- searchQFP.getFunctionApplications.asScala) {
+        val q = fA.searchQuery
 
-        scalarTerms = scalarTerms ++ s.toSeq
-        aggTerms = aggTerms ++ a.toSeq
+        if (fA.isAggregate) {
+          aggTerms = aggTerms + q
+        } else {
+          scalarTerms = scalarTerms + q
+        }
       }
 
       (scalarTerms, aggTerms)
@@ -174,10 +179,10 @@ class FirstSearchDesign extends SearchBuilder {
 
 
     private def gByClause: Option[Query] = {
-      if (aggFuncTerms.nonEmpty || searchQFP.groupedColumns.nonEmpty) {
+      if (aggFuncTerms.nonEmpty || !searchQFP.getGroupedColumns.isEmpty) {
         var bq = BoolQuery()
 
-        bq.should(searchQFP.searchTermsForGroupCols ++ aggFuncTerms.toSeq)
+        bq.should(searchTermsForGroupCols(searchQFP) ++ aggFuncTerms.toSeq)
 
         if (gByBoost) {
           bq = bq.boost(boost)
@@ -188,10 +193,10 @@ class FirstSearchDesign extends SearchBuilder {
     }
 
     private def orderByClause: Option[Query] = {
-      if (searchQFP.orderedColumns.nonEmpty) {
+      if (!searchQFP.getOrderedColumns.isEmpty) {
         var bq = BoolQuery()
 
-        bq.should(searchQFP.searchTermsForOrderCols)
+        bq.should(searchTermsForOrderCols(searchQFP))
 
         if (gByBoost) {
           bq = bq.boost(boost)
@@ -232,11 +237,11 @@ class FirstSearchDesign extends SearchBuilder {
         shouldQueries = shouldQueries ++ orderByClause.toSeq
       }
 
-      shouldQueries = shouldQueries ++ scalarFunClause.toSeq ++ Seq(BoolQuery().should(searchQFP.searchTermsForTables))
+      shouldQueries = shouldQueries ++ scalarFunClause.toSeq ++ Seq(BoolQuery().should(searchTermsForTables(searchQFP)))
 
       val q = BoolQuery().must(mustQueries).should(shouldQueries)
 
-      FirstSearchDesign.scriptScoreQuery(q, searchQFP.featureVector)
+      FirstSearchDesign.scriptScoreQuery(q, searchQFP.getFeatureVector)
     }
   }
 

@@ -2,22 +2,19 @@ package org.hatke.queryfingerprint.index
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.{ObjectMapper, PropertyNamingStrategies}
-import com.sksamuel.elastic4s.{ElasticClient, ElasticDsl, RequestFailure, RequestSuccess, Response}
 import com.sksamuel.elastic4s.http.JavaClient
 import com.sksamuel.elastic4s.requests.cluster.NodeUsageResponse
-import com.sksamuel.elastic4s.requests.indexes.{CreateIndexResponse, IndexResponse}
-import com.sksamuel.elastic4s.requests.mappings.MappingDefinition
 import com.sksamuel.elastic4s.requests.searches.SearchResponse
+import com.sksamuel.elastic4s.{ElasticClient, RequestFailure, RequestSuccess, Response}
 import org.apache.http.HttpHost
 import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
 import org.apache.http.impl.client.BasicCredentialsProvider
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder
-import org.elasticsearch.client.{RestClient, RestClientBuilder}
-import org.hatke.queryfingerprint.index.QueryFingerprintSample.client
+import org.elasticsearch.client.RestClient
 
-import java.io.{BufferedInputStream, ByteArrayInputStream, FileInputStream}
+import java.io.{ByteArrayInputStream, FileInputStream}
 import java.security.KeyStore
-import java.security.cert.{Certificate, CertificateFactory}
+import java.security.cert.CertificateFactory
 import javax.net.ssl.{SSLContext, TrustManagerFactory}
 
 object ESClientUtils extends App {

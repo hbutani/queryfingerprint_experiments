@@ -1,15 +1,19 @@
 package org.hatke.queryfingerprint.index
 
-import com.sksamuel.elastic4s.requests.indexes.{CreateIndexResponse, IndexMappings, IndexResponse}
-import org.hatke.queryfingerprint.model.Queryfingerprint
 import com.sksamuel.elastic4s.ElasticDsl
-import com.sksamuel.elastic4s.fields.ObjectField
-import org.hatke.queryfingerprint.index
-import org.hatke.queryfingerprint.index.search.FirstSearchDesign
-
+import com.sksamuel.elastic4s.requests.indexes.{CreateIndexResponse, IndexMappings, IndexResponse}
+import gudusoft.gsqlparser.EDbVendor
+import org.hatke.queryfingerprint.index.fulltext.TPCDSSQLEnv
+import org.hatke.queryfingerprint.index.{QueryFingerprint => QFPIndex}
+import org.hatke.queryfingerprint.model.{TpcdsUtils, Queryfingerprint => QFP}
+import org.hatke.queryfingerprint.search.FirstSearchDesign
+import org.hatke.queryfingerprint.snowflake.parse.{QueryAnalysis, QueryfingerprintBuilder}
+import org.hatke.queryfingerprint.{search => srch}
 
 
 object QueryFingerprintSample extends App {
+
+  import QueryFingerprint._
 
   lazy val client = ESClientUtils.setupHttpClient()
 
@@ -21,7 +25,7 @@ object QueryFingerprintSample extends App {
         ElasticDsl.deleteIndex("query_fingerprint")
       }.await.result
     } catch {
-      case _ : Throwable => ()
+      case _: Throwable => ()
     }
   }
 
@@ -32,39 +36,14 @@ object QueryFingerprintSample extends App {
       val req = ElasticDsl.createIndex("query_fingerprint").
         shards(1).
         replicas(1).
-        mapping(TestQueryFingerPrint.elasticMapping).
+        mapping(QFPIndex.elasticMapping).
         singleShard().
         singleReplica()
       req
     }.await.result
   }
 
-  def indexQFP(qfp: Queryfingerprint): IndexResponse = {
-    import com.sksamuel.elastic4s.ElasticDsl._
-    import scala.jdk.CollectionConverters._
-
-    client.execute {
-
-      val tablesReferenced = qfp.getTablesReferenced.asScala.map(t => ("tablesReferenced" -> t))
-      val columnsScanned = qfp.getColumnsScanned.asScala.map(c => ("columnsScanned" -> c))
-      val columnsFiltered = qfp.getColumnsFiltered.asScala.map(c => ("columnsFiltered" -> c))
-      val columnsScanFiltered = qfp.getColumnsScanFiltered.asScala.map(c => ("columnsScanFiltered" -> c))
-      val groupedColumns = qfp.getGroupedColumns.asScala.map(c => ("groupedColumns" -> c))
-      val orderedColumns = qfp.getOrderedColumns.asScala.map(c => ("orderedColumns" -> c))
-      val predicates = qfp.getPredicates.asScala.map(p => ("predicates" -> p))
-      val scannedPredicates = qfp.getScanPredicates.asScala.map(p => ("scannedPredicates" -> p))
-      val joins = qfp.getJoins.asScala.map(p => ("joins" -> p))
-      val correlatedColumns = qfp.getCorrelatedColumns.asScala.map(p => ("correlatedColumns" -> p))
-
-      indexInto("query_fingerprint").fields(
-        tablesReferenced ++ columnsScanned ++ columnsFiltered ++
-          columnsScanFiltered ++ groupedColumns ++ orderedColumns ++
-          predicates ++ scannedPredicates ++ joins ++ correlatedColumns
-      ).withId(qfp.getHash.toString)
-    }.await.result
-  }
-
-  def indexQFP2(qfp : TestQueryFingerPrint) : IndexResponse = {
+  def indexQFP2(qfp: QFP): IndexResponse = {
     import com.sksamuel.elastic4s.ElasticDsl._
 
     client.execute {
@@ -73,58 +52,95 @@ object QueryFingerprintSample extends App {
 
   }
 
-  def showMapping() : Seq[IndexMappings] = {
+  def showMapping(): Seq[IndexMappings] = {
     import com.sksamuel.elastic4s.ElasticDsl._
-    import com.sksamuel.elastic4s.json4s.ElasticJson4s.Implicits._
 
     client.execute {
       ElasticDsl.getMapping("query_fingerprint")
     }.await.result
   }
 
-  def searchAll : IndexedSeq[TestQueryFingerPrint] = {
+  def searchAll: IndexedSeq[QFP] = {
     import com.sksamuel.elastic4s.ElasticDsl._
 
     val r = client.execute {
       search("query_fingerprint").matchAllQuery()
     }.await.result
 
-    r.to[TestQueryFingerPrint]
+    r.to[QFP]
 
   }
 
-  def searchQFP(searchQFP : TestQueryFingerPrint, explain : Boolean) : IndexedSeq[TestQueryFingerPrint] = {
-    search.search(searchQFP, new FirstSearchDesign, explain)(client)
+  def searchQFP(searchQFP: QFP, explain: Boolean): IndexedSeq[QFP] = {
+    srch.search(searchQFP, new FirstSearchDesign, explain)(client)
   }
 
-  def close() : Unit = {
+  def close(): Unit = {
     client.close()
   }
+
+  private val sqlEnv = new TPCDSSQLEnv(EDbVendor.dbvsnowflake)
 
   try {
 
     deleteIndex()
     createIndex()
 
-    for(qfp <- TestQueryFingerPrint.tpcdsQFP.values) {
-      indexQFP2(qfp)
+    val reverseMap = scala.collection.mutable.Map[String, String]()
+
+    val fpMap : Map[String, QFP] =  (for( id <- 1 until 100
+                                          if !Set(5, 9, 12, 14, 16, 21, 23, 24, 32, 37, 39, 40,
+                                            50, 62, 64, 77, 80, 82, 92, 94, 95, 98, 99).contains(id)
+                                          ) yield {
+      val query = TpcdsUtils.readTpcdsQuery(s"query$id")
+      val qa = new QueryAnalysis(sqlEnv, query)
+      val qfpB = new QueryfingerprintBuilder(qa)
+      val fps = qfpB.build
+
+      fps.forEach(indexQFP2)
+
+      import scala.jdk.CollectionConverters._
+      for(fp <- fps.asScala) {
+        val qNm = if (fp.getParentQB.isEmpty) s"query$id" else s"Subquery of query$id, hash=${fp.getHash}"
+        reverseMap += (fp.getHash.toString -> qNm)
+      }
+
+      s"query$id" -> fps.get(0)
+    }).toMap
+
+
+
+    def getQryNm(qfp : QFP) : String = {
+
+      if (!reverseMap.contains(qfp.getHash.toString)) {
+        System.out.println("This shouldn't happen")
+      }
+
+      reverseMap.getOrElse(qfp.getHash.toString, "<not recorded subquery>")
+    }
+
+    def printResult(rQFPs : Seq[QFP]) : Unit = {
+      for(qfp <- rQFPs) {
+        println(s"${getQryNm(qfp)}")
+      }
     }
 
     println(showMapping().mkString("\n"))
 
-    // val rQFPs = searchAll
+    val rQFPs1 = searchQFP(fpMap("query1"), true)
+    val rQFPs10 = searchQFP(fpMap("query10"), true)
+    val rQFPs3 = searchQFP(fpMap("query3"), true)
 
-    var rQFPs = searchQFP(index.search.sampleQ1, false)
-   println(rQFPs.mkString("\n"))
+    println("SEARCH Query 1:")
+    printResult(rQFPs1)
 
-    rQFPs = searchQFP(TestQueryFingerPrint.tpcdsQFP("q1"), true)
-    println(rQFPs.mkString("\n"))
+    println("SEARCH Query 10:")
+    printResult(rQFPs10)
 
-    rQFPs = searchQFP(TestQueryFingerPrint.tpcdsQFP("q10"), true)
-    println(rQFPs.mkString("\n"))
+    println("SEARCH Query 3:")
+    printResult(rQFPs3)
 
   } finally {
     close()
   }
-
 }
