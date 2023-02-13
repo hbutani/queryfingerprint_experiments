@@ -60,7 +60,7 @@ object QueryFingerprintSample extends App {
         tablesReferenced ++ columnsScanned ++ columnsFiltered ++
           columnsScanFiltered ++ groupedColumns ++ orderedColumns ++
           predicates ++ scannedPredicates ++ joins ++ correlatedColumns
-      ).withId(qfp.getUuid.toString)
+      ).withId(qfp.getHash.toString)
     }.await.result
   }
 

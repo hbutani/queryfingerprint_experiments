@@ -110,7 +110,9 @@ case class TestQueryFingerPrint(uuid: String,
                                 joins: Set[TestJoin],
                                 functionApplications: Set[TestFunctionApplication] = Set.empty,
                                 groupedColumns: Set[String] = Set.empty,
-                                orderedColumns: Set[String] = Set.empty
+                                orderedColumns: Set[String] = Set.empty,
+                                id : Option[Int] = None,
+                                sqlText : String = ""
                                ) {
 
   @transient lazy val featureVector: Array[Int] = {
@@ -148,6 +150,7 @@ object TestQueryFingerPrint {
         ("functionApplications" -> qfp.functionApplications.flatMap(_.indexElements)) ~
         ("groupedColumns" -> qfp.groupedColumns) ~
         ("orderedColumns" -> qfp.orderedColumns) ~
+        ("id" -> qfp.id) ~
         ("featureVector" -> asJValue(qfp.featureVector)) ~
         (SOURCE_FIELD -> JsonUtils.asJson(qfp)(jsonFormat))
 
@@ -178,6 +181,7 @@ object TestQueryFingerPrint {
       keywordField("scannedPredicates"),
       keywordField("functionApplications"),
       keywordField("joins"),
+      intField("id"),
       DenseVectorField("featureVector", FEATURE_VECTOR_DIM),
       textField(SOURCE_FIELD).index(false)
     )

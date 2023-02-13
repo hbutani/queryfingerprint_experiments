@@ -23,36 +23,26 @@ public class QueryfingerprintBuilder {
     private final QueryAnalysis qA;
 
 
-    private Map<Integer, UUID> uuidMap;
+    private Map<UUID, Integer> parentIdMap;
     private Map<Integer, Queryfingerprint> fpMap;
+    private Map<UUID, Queryfingerprint> hashFpMap;
 
     public QueryfingerprintBuilder(QueryAnalysis qA) {
         this.qA = qA;
-        uuidMap = new HashMap<>();
         fpMap = new HashMap<>();
-        assignUUid(qA.getTopLevelQB());
-        for(SourceRef sR : qA.ctes().values()) {
-            assignUUid(sR);
-        }
+        hashFpMap = new HashMap<>();
+        parentIdMap = new HashMap<>();
     }
 
-    private void assignUUid(Source src) {
-        if (src instanceof SourceRef) {
-            assignUUid(((SourceRef) src).getSource());
-        } else if (src instanceof QB) {
-            QB qb = (QB) src;
-            if (!uuidMap.containsKey(qb.getId())) {
-                uuidMap.put(qb.getId(), UUID.randomUUID());
-                for (QB cQB : qb.childQBs()) {
-                    assignUUid(cQB);
-                }
-            }
-        }
-    }
 
     public ImmutableList<Queryfingerprint> build() {
         build(qA.getTopLevelQB());
+        updateParentHash();
         return ImmutableList.copyOf(fpMap.values());
+    }
+
+    private void updateParentHash() {
+        parentIdMap.forEach((hash,id) ->  hashFpMap.get(hash).setParentQB(fpMap.get(id).getHash()) );
     }
 
     private Queryfingerprint build(QB qb) {
@@ -83,14 +73,18 @@ public class QueryfingerprintBuilder {
             }
             qFP = qbBuilder.build();
             fpMap.put(qb.getId(), qFP);
+            hashFpMap.put(qFP.getHash(), qFP);
+            if(qb.getParentQB().isPresent()) {
+                parentIdMap.put(qFP.getHash(), qb.getParentQB().get().getId());
+            }
         }
 
        return qFP;
     }
 
     private QBBuilder createQBuilder(QB qb) {
-        assert uuidMap.containsKey(qb.getId());
-        assert qb.getParentQB().isEmpty() || uuidMap.containsKey(qb.getParentQB().get().getId());
+//        assert uuidMap.containsKey(qb.getId());
+//        assert qb.getParentQB().isEmpty() || uuidMap.containsKey(qb.getParentQB().get().getId());
 
         QBBuilder qbBuilder = new QBBuilder(qb);
 
@@ -192,10 +186,6 @@ public class QueryfingerprintBuilder {
 
         final QB qb;
 
-        final UUID id;
-
-        final Optional<UUID> parentId;
-
         HashSet<String> tablesReferenced = new HashSet<>();
         HashSet<String> columnsScanned = new HashSet<>();
         HashSet<String> columnsFiltered = new HashSet<>();
@@ -211,8 +201,6 @@ public class QueryfingerprintBuilder {
 
         public QBBuilder(QB qb) {
             this.qb = qb;
-            this.id = QueryfingerprintBuilder.this.uuidMap.get(qb.getId());
-            this.parentId = qb.getParentQB().map(p -> QueryfingerprintBuilder.this.uuidMap.get(p.getId()));
         }
 
         void merge(Queryfingerprint childFP) {
@@ -224,7 +212,7 @@ public class QueryfingerprintBuilder {
             scanPredicates.addAll(childFP.getScanPredicates());
             functionApplications.addAll(childFP.getFunctionApplications());
             joins.addAll(childFP.getJoins());
-            referencedQBlocks.add(childFP.getUuid());
+            referencedQBlocks.add(childFP.getHash());
             referencedQBlocks.addAll(childFP.getReferencedQBlocks());
             groupedColumns.addAll(childFP.getGroupedColumns());
             orderedColumns.addAll(childFP.getOrderedColumns());
@@ -232,10 +220,8 @@ public class QueryfingerprintBuilder {
 
         Queryfingerprint build() {
             return new Queryfingerprint(
-                    id,
                     qb.getSelectStat().toString(),
                     qb.isCTE(),
-                    parentId,
                     qb.getQbType(),
                     ImmutableSet.copyOf(tablesReferenced),
                     ImmutableSet.copyOf(columnsScanned),
