@@ -46,7 +46,7 @@ public class FingerprintIndexer {
                     br.operations(op -> op
                             .index(idx -> idx
                                     .index("fingerprints")
-                                    .id(qf.getUuid().toString())
+                                    .id(qf.getHash().toString())
                                     .document(qf)
                             )
                     );

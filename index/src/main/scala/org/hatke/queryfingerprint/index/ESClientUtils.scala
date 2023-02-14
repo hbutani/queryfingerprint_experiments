@@ -2,22 +2,19 @@ package org.hatke.queryfingerprint.index
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.{ObjectMapper, PropertyNamingStrategies}
-import com.sksamuel.elastic4s.{ElasticClient, ElasticDsl, RequestFailure, RequestSuccess, Response}
 import com.sksamuel.elastic4s.http.JavaClient
 import com.sksamuel.elastic4s.requests.cluster.NodeUsageResponse
-import com.sksamuel.elastic4s.requests.indexes.{CreateIndexResponse, IndexResponse}
-import com.sksamuel.elastic4s.requests.mappings.MappingDefinition
 import com.sksamuel.elastic4s.requests.searches.SearchResponse
+import com.sksamuel.elastic4s.{ElasticClient, RequestFailure, RequestSuccess, Response}
 import org.apache.http.HttpHost
 import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
 import org.apache.http.impl.client.BasicCredentialsProvider
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder
-import org.elasticsearch.client.{RestClient, RestClientBuilder}
-import org.hatke.queryfingerprint.index.QueryFingerprintSample.client
+import org.elasticsearch.client.RestClient
 
-import java.io.{BufferedInputStream, ByteArrayInputStream, FileInputStream}
+import java.io.{ByteArrayInputStream, FileInputStream}
 import java.security.KeyStore
-import java.security.cert.{Certificate, CertificateFactory}
+import java.security.cert.CertificateFactory
 import javax.net.ssl.{SSLContext, TrustManagerFactory}
 
 object ESClientUtils extends App {
@@ -45,18 +42,24 @@ object ESClientUtils extends App {
   def setupHttpClient(host: String = "localhost",
                       port: Int = 9200,
                       userName: String = "elastic",
-                      password: String = "s3cret",
+                      _password: String = "s3cret",
                       certFile: String = System.getProperty("user.home") + "/learn/elastic_search/es_testcontainer_http_ca.crt"
 
                      ) = {
-    val host = new HttpHost("localhost", port, "http")
+
+    val scheme = Option(System.getenv("QFP_ES_HTTP_SCHEME")).getOrElse("http")
+    val password = Option(System.getenv("QFP_ES_PASSWORD")).getOrElse(_password)
+
+    val host = new HttpHost("localhost", port, scheme)
     val credentialsProvider = new BasicCredentialsProvider
     credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(userName, password))
     val builder = RestClient.builder(host)
 
     builder.setHttpClientConfigCallback((clientBuilder: HttpAsyncClientBuilder) => {
-      //      clientBuilder.setSSLContext(createSslContextFromCa(fileBytes(certFile)))
-      clientBuilder.setDefaultCredentialsProvider(credentialsProvider)
+      clientBuilder.setSSLContext(createSslContextFromCa(fileBytes(certFile)))
+      if (scheme == "https") {
+        clientBuilder.setDefaultCredentialsProvider(credentialsProvider)
+      }
       clientBuilder
     })
 

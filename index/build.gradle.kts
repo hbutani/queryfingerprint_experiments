@@ -21,6 +21,10 @@ dependencies {
 
     implementation("org.json4s:json4s-ext_2.13:4.1.0-M2")
     implementation("org.json4s:json4s-jackson_2.13:4.1.0-M2")
+
+    testImplementation(project(":snowflake"))
+    testImplementation(files("$projectDir/../lib/gudusoft.gsqlparser-2.6.1.1.jar"))
+
 }
 
 scala {

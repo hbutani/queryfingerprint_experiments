@@ -1,9 +1,13 @@
 package org.hatke.queryfingerprint.model;
 
+import com.google.common.collect.ImmutableSet;
+
 import java.io.Serializable;
 
 public class FunctionApplication implements Serializable {
     private static final long serialVersionUID = 8704387471047025031L;
+
+    public static final ImmutableSet<String> AGG_FUNCTIONS = ImmutableSet.of("SUM", "COUNT", "MIN", "MAX", "AVG", "AVERAGE");
 
     private final String functionName;
     private final String column;
@@ -19,6 +23,10 @@ public class FunctionApplication implements Serializable {
 
     public String getColumn() {
         return column;
+    }
+
+    public boolean isAggregate() {
+        return AGG_FUNCTIONS.contains(functionName);
     }
 
     @Override

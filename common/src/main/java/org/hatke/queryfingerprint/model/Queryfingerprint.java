@@ -127,6 +127,41 @@ public class Queryfingerprint implements Serializable {
         this.parentQB = Optional.empty();
     }
 
+    public Queryfingerprint(String sqlText, boolean isCTE,
+                            QBType type, ImmutableSet<String> tablesReferenced,
+                            ImmutableSet<String> columnsScanned,
+                            ImmutableSet<String> columnsFiltered,
+                            ImmutableSet<String> columnsScanFiltered,
+                            ImmutableSet<Predicate> predicates,
+                            ImmutableSet<Predicate> scanPredicates,
+                            ImmutableSet<FunctionApplication> functionApplications,
+                            ImmutableSet<Join> joins,
+                            ImmutableSet<String> correlatedColumns,
+                            ImmutableSet<UUID> referencedQBlocks,
+                            ImmutableSet<String> columnsGroupBy,
+                            ImmutableSet<String> columnsOrderBy,
+                            UUID hash,
+                            Optional<UUID> parentQB
+    ) {
+        this.sqlText = sqlText;
+        this.type = type;
+        this.tablesReferenced = tablesReferenced;
+        this.columnsScanned = columnsScanned;
+        this.columnsFiltered = columnsFiltered;
+        this.columnsScanFiltered = columnsScanFiltered;
+        this.predicates = predicates;
+        this.scanPredicates = scanPredicates;
+        this.functionApplications = functionApplications;
+        this.joins = joins;
+        this.correlatedColumns = correlatedColumns;
+        this.referencedQBlocks = referencedQBlocks;
+        this.isCTE = isCTE;
+        this.groupedColumns = columnsGroupBy;
+        this.orderedColumns = columnsOrderBy;
+        this.hash = hash;
+        this.parentQB = parentQB;
+    }
+
     private UUID createUniqueHash() {
         StringBuilder sb = new StringBuilder();
         sb.append(this.type);
@@ -216,6 +251,16 @@ public class Queryfingerprint implements Serializable {
 
     public ImmutableSet<String> getOrderedColumns() {
         return orderedColumns;
+    }
+
+    public int[] getFeatureVector() {
+        return new int[]{
+                tablesReferenced.size(),
+                joins.size(),
+                predicates.size(),
+                groupedColumns.size(),
+                functionApplications.stream().map(f -> f.isAggregate()).collect(Collectors.toList()).size()
+        };
     }
 
     @Override
