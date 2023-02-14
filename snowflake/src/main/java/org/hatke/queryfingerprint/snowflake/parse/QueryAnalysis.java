@@ -34,9 +34,9 @@ public class QueryAnalysis {
         }
 
         public void setQuery(TGSqlParser tgSqlParser) {
-            assert(tgSqlParser != null);
-            assert(tgSqlParser.getErrorCount() == 0);
-            assert(tgSqlParser.sqlstatements.size() == 1);
+            assert (tgSqlParser != null);
+            assert (tgSqlParser.getErrorCount() == 0);
+            assert (tgSqlParser.sqlstatements.size() == 1);
             assert (tgSqlParser.sqlstatements.get(0) instanceof TSelectSqlStatement);
             this.tgSqlParser = tgSqlParser;
             this.query = (TSelectSqlStatement) tgSqlParser.sqlstatements.get(0);
@@ -94,16 +94,25 @@ public class QueryAnalysis {
     private TSelectSqlStatement setupTopLevelStat(String sql) {
         TGSqlParser sqlparser = new TGSqlParser(sqlEnv.getDBVendor());
         sqlparser.setSqlEnv(sqlEnv);
-
         sqlparser.sqltext = sql;
         int ret = sqlparser.parse();
+        return setupTopLevelStat(sqlparser);
+    }
 
+    private TSelectSqlStatement setupTopLevelStat(TGSqlParser sqlparser, String sql) {
+        sqlparser.setSqlEnv(sqlEnv);
+        sqlparser.sqltext = sql;
+        int ret = sqlparser.parse();
+        return setupTopLevelStat(sqlparser);
+    }
+
+    private TSelectSqlStatement setupTopLevelStat(TGSqlParser sqlparser) {
         if (sqlparser.getErrorCount() != 0) {
             throw new IllegalArgumentException(
                     String.format("Parse error %1$s\n" +
-                            "SQL:\n %2$s\n",
+                                    "SQL:\n %2$s\n",
                             sqlparser.getErrormessage(),
-                            sql)
+                            sqlparser.sqltext)
             );
         }
 
@@ -111,7 +120,7 @@ public class QueryAnalysis {
             throw new IllegalArgumentException(
                     String.format("Current support for single statements only\n" +
                                     "SQL:\n %1$s\n",
-                            sql)
+                            sqlparser.sqltext)
             );
         }
 
@@ -119,7 +128,7 @@ public class QueryAnalysis {
             throw new IllegalArgumentException(
                     String.format("Current support for select statements only\n" +
                                     "SQL:\n %1$s\n",
-                            sql)
+                            sqlparser.sqltext)
             );
         }
 
@@ -130,6 +139,20 @@ public class QueryAnalysis {
     public QueryAnalysis(TSQLEnv sqlEnv, String sql) {
         this.sqlEnv = sqlEnv;
         this.inputStat = setupTopLevelStat(sql);
+        this.topLevelQB = QB.create(this, true, QBType.regular, inputStat,
+                Optional.empty(), Optional.empty(), false);
+    }
+
+    public QueryAnalysis(TSQLEnv sqlEnv, TGSqlParser parser, String sql) {
+        this.sqlEnv = sqlEnv;
+        this.inputStat = setupTopLevelStat(parser, sql);
+        this.topLevelQB = QB.create(this, true, QBType.regular, inputStat,
+                Optional.empty(), Optional.empty(), false);
+    }
+
+    public QueryAnalysis(TSQLEnv sqlEnv, TGSqlParser parser) {
+        this.sqlEnv = sqlEnv;
+        this.inputStat = setupTopLevelStat(parser);
         this.topLevelQB = QB.create(this, true, QBType.regular, inputStat,
                 Optional.empty(), Optional.empty(), false);
     }

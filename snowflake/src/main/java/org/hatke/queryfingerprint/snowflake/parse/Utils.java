@@ -29,6 +29,7 @@ public class Utils {
 
     /**
      * copied from {@link SQLUtil}
+     *
      * @param dbVendor
      * @param objectType
      * @param identifier
@@ -62,7 +63,7 @@ public class Utils {
 
     /**
      * based on {@link SQLUtil:normalizedName} and functions in {@link gudusoft.gsqlparser.dlineage.util.DlineageUtil}
-     *
+     * <p>
      * Behavior is to normalize components of give objName based on the dbVendor of the SQLEnv.
      * Also return the unqualified normalized name.
      */
@@ -100,7 +101,7 @@ public class Utils {
                                 normalizeIdentifier(dbVendor, ESQLDataObjectType.dotCatalog, segments.get(numElems - 2)));
                     }
                     segments.set(numElems - 1,
-                                normalizeIdentifier(dbVendor, sqlDataObjectType, segments.get(numElems - 1)));
+                            normalizeIdentifier(dbVendor, sqlDataObjectType, segments.get(numElems - 1)));
                 } else if (sqlDataObjectType == ESQLDataObjectType.dotCatalog) {
                     segments.set(numElems - 1,
                             normalizeIdentifier(dbVendor, sqlDataObjectType, segments.get(numElems - 1)));
@@ -131,7 +132,7 @@ public class Utils {
     public static String qualifiedName(String... names) {
         StringBuilder b = new StringBuilder();
         boolean empty = true;
-        for(String nm : names) {
+        for (String nm : names) {
             if (nm != null) {
                 if (!empty) {
                     b.append(".");
@@ -140,7 +141,7 @@ public class Utils {
                 empty = false;
             }
         }
-        return  b.toString();
+        return b.toString();
     }
 
     public static Pair<String, String> fqNormalizedTableName(TSQLEnv sqlEnv,
@@ -149,8 +150,34 @@ public class Utils {
         return fqNormalizedTableName(sqlEnv, tableName);
     }
 
+    // TODO : Improve this
     public static Pair<String, String> fqNormalizedTableName(TSQLEnv sqlEnv,
                                                              String tableName) {
+        String cacheKey = sqlEnv.getDefaultCatalogName() + "." + tableName;
+        Pair<String, String> names = EnvCache.normalizedTableName.getIfPresent(cacheKey);
+        if (names == null) {
+            names = calculateFqNormalizedTableName(sqlEnv, tableName);
+            EnvCache.normalizedTableName.put(cacheKey, names);
+        }
+
+        return names;
+    }
+
+    public static List<String> normalizedColName(TSQLEnv sqlEnv,
+                                                 TObjectName objName) {
+        String cacheKey = sqlEnv.getDefaultCatalogName() + "." + stringValue(objName, ESQLDataObjectType.dotColumn);
+        List<String> names = EnvCache.normalizedColName.getIfPresent(cacheKey);
+
+        if (names == null) {
+            names = calculateNormalizedColName(sqlEnv, objName);
+            EnvCache.normalizedColName.put(cacheKey, names);
+        }
+
+        return names;
+    }
+
+    public static Pair<String, String> calculateFqNormalizedTableName(TSQLEnv sqlEnv,
+                                                                      String tableName) {
         List<String> segments = SQLUtil.parseNames(tableName);
         int numElems = segments.size();
         EDbVendor dbVendor = sqlEnv.getDBVendor();
@@ -169,8 +196,8 @@ public class Utils {
         return Pair.pairOf(tabName, qualifiedName(tableDB, tableSchema, tabName));
     }
 
-    public static List<String> normalizedColName(TSQLEnv sqlEnv,
-                                                 TObjectName objName) {
+    public static List<String> calculateNormalizedColName(TSQLEnv sqlEnv,
+                                                          TObjectName objName) {
 
         String colName = stringValue(objName, ESQLDataObjectType.dotColumn);
         List<String> segments = SQLUtil.parseNames(colName);
@@ -212,7 +239,6 @@ public class Utils {
     }
 
 
-
     public static String colAttr(TResultColumn col, Function<TResultColumn, String> extractAttr) {
         String v = extractAttr.apply(col);
         return v == null || v == "" ? null : v;
@@ -222,11 +248,11 @@ public class Utils {
 
         ImmutableList.Builder<String> outputShapeBldr = new ImmutableList.Builder();
 
-        for(TResultColumn col : selectStat.getResultColumnList()) {
+        for (TResultColumn col : selectStat.getResultColumnList()) {
             String outName = colAttr(col, TResultColumn::getColumnAlias);
             outName = outName == null ? colAttr(col, TResultColumn::getColumnNameOnly) : outName;
             outName = outName == null ? col.getExpr().toString() : outName;
-           outputShapeBldr.add(outName);
+            outputShapeBldr.add(outName);
 
         }
         return outputShapeBldr.build();

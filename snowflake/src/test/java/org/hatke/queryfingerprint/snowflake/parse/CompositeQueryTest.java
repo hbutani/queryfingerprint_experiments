@@ -20,10 +20,10 @@ public class CompositeQueryTest extends TestBase {
         ImmutableList<Queryfingerprint> fps = qfpB.build();
         assertEquals(fps.size(), 5);
 
-        ImmutableList<Queryfingerprint>  cteQueries = fps.stream().filter( f -> f.isCTE()).collect(ImmutableList.toImmutableList());
+        ImmutableList<Queryfingerprint> cteQueries = fps.stream().filter(f -> f.isCTE()).collect(ImmutableList.toImmutableList());
         assertEquals(cteQueries.size(), 4);
 
-        ImmutableList<Queryfingerprint>  compositeQuery = fps.stream().filter( f -> f.getType() == QBType.composite).collect(ImmutableList.toImmutableList());
+        ImmutableList<Queryfingerprint> compositeQuery = fps.stream().filter(f -> f.getType() == QBType.composite).collect(ImmutableList.toImmutableList());
         assertEquals(compositeQuery.size(), 1);
 
         // assert filter columns

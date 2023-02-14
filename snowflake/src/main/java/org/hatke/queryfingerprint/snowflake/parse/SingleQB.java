@@ -309,7 +309,7 @@ public class SingleQB implements QB {
     private void buildSubqueriesInWhere(TExpression whereCond) {
         Set<TExpression> subqueries = FindExpressionsByType.findSubqueries(whereCond);
 
-        LOGGER.info(TreeDump.dump(whereCond));
+//        LOGGER.info(TreeDump.dump(whereCond));
 
         for (TExpression subE : subqueries) {
             QB subQB = QB.create(qA, false, QBType.sub_query, subE.getSubQuery(),
