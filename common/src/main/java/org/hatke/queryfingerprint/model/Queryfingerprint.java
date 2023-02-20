@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -284,5 +285,162 @@ public class Queryfingerprint implements Serializable {
                 "\n  correlatedColumns=" + correlatedColumns.stream().collect(Collectors.joining(", ", "[", "]")) +
                 "\n  referencedQBlocks=" + referencedQBlocks.stream().map(f -> f.toString()).collect(Collectors.joining(", ", "[", "]")) +
                 "\n}";
+    }
+
+    public static class Builder {
+
+        private final String sqlText;
+        private final boolean isCTE;
+        private final QBType qbType;
+
+        private HashSet<String> tablesReferenced = new HashSet<>();
+        private HashSet<String> columnsScanned = new HashSet<>();
+        private HashSet<String> columnsFiltered = new HashSet<>();
+        private HashSet<String> columnsScanFiltered = new HashSet<>();
+        private HashSet<Predicate> predicates = new HashSet<>();
+        private HashSet<Predicate> scanPredicates = new HashSet<>();
+        private HashSet<FunctionApplication> functionApplications = new HashSet<>();
+        private HashSet<Join> joins = new HashSet<>();
+        private HashSet<String> correlatedColumns = new HashSet<>();
+        private HashSet<UUID> referencedQBlocks = new HashSet<>();
+        private HashSet<String> groupedColumns = new HashSet<>();
+        private HashSet<String> orderedColumns = new HashSet<>();
+
+        public Builder(String sqlText, boolean isCTE, QBType qbType) {
+            this.sqlText = sqlText;
+            this.isCTE = isCTE;
+            this.qbType = qbType;
+        }
+
+        public void addTableReferenced(String t) {
+            tablesReferenced.add(t);
+        }
+
+        public void addAllTableReferenced(ImmutableSet<String> s) {
+            tablesReferenced.addAll(s);
+        }
+
+        public void addColumnScanned(String t) {
+            columnsScanned.add(t);
+        }
+
+        public void addAllColumnsScanned(ImmutableSet<String> s) {
+            columnsScanned.addAll(s);
+        }
+
+        public void addColumnFiltered(String t) {
+            columnsFiltered.add(t);
+        }
+
+        public void addAllColumnsFiltered(ImmutableSet<String> s) {
+            columnsFiltered.addAll(s);
+        }
+
+        public void addColumnScanFiltered(String t) {
+            columnsScanFiltered.add(t);
+        }
+
+        public void addAllColumnsScanFiltered(ImmutableSet<String> s) {
+            columnsScanFiltered.addAll(s);
+        }
+
+        public void addPredicate(Predicate p) {
+            predicates.add(p);
+        }
+
+        public void addAllPredicates(ImmutableSet<Predicate> s) {
+            predicates.addAll(s);
+        }
+
+        public void addScanPredicate(Predicate p) {
+            scanPredicates.add(p);
+        }
+
+        public void addAllScanPredicates(ImmutableSet<Predicate> s) {
+            scanPredicates.addAll(s);
+        }
+
+        public void addFunctionApplication(FunctionApplication f) {
+            functionApplications.add(f);
+        }
+
+        public void addAllFunctionApplications(ImmutableSet<FunctionApplication> s) {
+            functionApplications.addAll(s);
+        }
+
+        public void addJoin(Join f) {
+            joins.add(f);
+        }
+
+        public void addAllJoins(ImmutableSet<Join> s) {
+            joins.addAll(s);
+        }
+
+        public void addCorrelatedColumn(String c) {
+            correlatedColumns.add(c);
+        }
+
+        public void addAllCorrelatedColumns(ImmutableSet<String> s) {
+            correlatedColumns.addAll(s);
+        }
+
+        public void addReferencedQBlock(UUID u) {
+            referencedQBlocks.add(u);
+        }
+
+        public void addAllReferencedQBlocks(ImmutableSet<UUID> s) {
+            referencedQBlocks.addAll(s);
+        }
+
+        public void addGroupedColumn(String c) {
+            groupedColumns.add(c);
+        }
+
+        public void addAllGroupedColumns(ImmutableSet<String> s) {
+            groupedColumns.addAll(s);
+        }
+
+        public void addOrderedColumn(String c) {
+            orderedColumns.add(c);
+        }
+
+        public void addAllOrderedColumns(ImmutableSet<String> s) {
+            orderedColumns.addAll(s);
+        }
+
+        public void merge(Queryfingerprint childFP) {
+            tablesReferenced.addAll(childFP.getTablesReferenced());
+            columnsScanned.addAll(childFP.getColumnsScanned());
+            columnsFiltered.addAll(childFP.getColumnsFiltered());
+            columnsScanFiltered.addAll(childFP.getColumnsScanFiltered());
+            predicates.addAll(childFP.getPredicates());
+            scanPredicates.addAll(childFP.getScanPredicates());
+            functionApplications.addAll(childFP.getFunctionApplications());
+            joins.addAll(childFP.getJoins());
+            referencedQBlocks.add(childFP.getHash());
+            referencedQBlocks.addAll(childFP.getReferencedQBlocks());
+            groupedColumns.addAll(childFP.getGroupedColumns());
+            orderedColumns.addAll(childFP.getOrderedColumns());
+        }
+
+        public Queryfingerprint build() {
+            return new Queryfingerprint(
+                    sqlText,
+                    isCTE,
+                    qbType,
+                    ImmutableSet.copyOf(tablesReferenced),
+                    ImmutableSet.copyOf(columnsScanned),
+                    ImmutableSet.copyOf(columnsFiltered),
+                    ImmutableSet.copyOf(columnsScanFiltered),
+                    ImmutableSet.copyOf(predicates),
+                    ImmutableSet.copyOf(scanPredicates),
+                    ImmutableSet.copyOf(functionApplications),
+                    ImmutableSet.copyOf(joins),
+                    ImmutableSet.copyOf(correlatedColumns),
+                    ImmutableSet.copyOf(referencedQBlocks),
+                    ImmutableSet.copyOf(groupedColumns),
+                    ImmutableSet.copyOf(orderedColumns)
+            );
+        }
     }
 }
