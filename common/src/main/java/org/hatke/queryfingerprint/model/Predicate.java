@@ -14,10 +14,14 @@ public class Predicate implements Serializable {
 
     private final String operator;
 
-    public Predicate(Optional<String> functionName, String column, String operator) {
+    private final Optional<String> constantValue;
+
+    public Predicate(Optional<String> functionName, String column,
+                     String operator, Optional<String> constantValue) {
         this.functionName = functionName;
         this.column = column;
         this.operator = operator;
+        this.constantValue = constantValue;
     }
 
     public Optional<String> getFunctionName() {
@@ -32,12 +36,17 @@ public class Predicate implements Serializable {
         return operator;
     }
 
+    public Optional<String> getConstantValue() {
+        return constantValue;
+    }
+
     @Override
     public String toString() {
         return "Predicate{" +
-                Utils.optionalInfoString("functionName", functionName) +
+                "functionName=" + functionName +
                 ", column='" + column + '\'' +
                 ", operator='" + operator + '\'' +
+                ", constantValue=" + constantValue +
                 '}';
     }
 
@@ -46,11 +55,14 @@ public class Predicate implements Serializable {
         if (this == o) return true;
         if (!(o instanceof Predicate)) return false;
         Predicate predicate = (Predicate) o;
-        return Objects.equal(getFunctionName(), predicate.getFunctionName()) && Objects.equal(getColumn(), predicate.getColumn()) && Objects.equal(getOperator(), predicate.getOperator());
+        return Objects.equal(getFunctionName(), predicate.getFunctionName()) &&
+                Objects.equal(getColumn(), predicate.getColumn()) &&
+                Objects.equal(getOperator(), predicate.getOperator()) &&
+                Objects.equal(getConstantValue(), predicate.getConstantValue());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(getFunctionName(), getColumn(), getOperator());
+        return Objects.hashCode(getFunctionName(), getColumn(), getOperator(), getConstantValue());
     }
 }

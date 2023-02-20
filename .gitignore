@@ -16,3 +16,6 @@ lib/**
 dev/docker/docker-data/**
 
 **/samplejsons
+
+**/notes
+

@@ -25,7 +25,7 @@ public class DebugQueriesTest extends TestBase {
         assertEquals(fps.size(), 1);
 
         Queryfingerprint qf0 = fps.get(0);
-        assertEquals(qf0.getHash().toString(), "1504fdb9-ed44-3cde-9521-763663da5d5b");
+        assertEquals(qf0.getHash().toString(), "5f80cfc3-176f-357b-b13f-e9c063ebfaa6");
         assertEquals(qf0.getTablesReferenced(), ImmutableSet.of("TPCDS.CUSTOMER_ADDRESS"));
         assertEquals(qf0.getColumnsScanned(), ImmutableSet.of("TPCDS.CUSTOMER_ADDRESS.CA_ZIP"));
         assertEquals(qf0.getColumnsFiltered(), ImmutableSet.of("TPCDS.CUSTOMER_ADDRESS.CA_ZIP"));
@@ -69,7 +69,7 @@ public class DebugQueriesTest extends TestBase {
         QueryfingerprintBuilder qfpB = new QueryfingerprintBuilder(qa);
         ImmutableList<Queryfingerprint> fps = qfpB.build();
 
-        assertEquals(fps.size(), 3);
+        assertEquals(fps.size(), 10);
     }
 
 }

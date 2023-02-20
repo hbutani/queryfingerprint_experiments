@@ -143,7 +143,10 @@ public class QueryfingerprintBuilder {
                             Optional.empty() : Optional.of(p.getFuncCalls().get(0));
 
                     qbBuilder.scanPredicates.add(
-                            new Predicate(fC.map(f -> f.getFuncName()), sc.getFQN(), p.getComparisonType().name())
+                            new Predicate(fC.map(f -> f.getFuncName()),
+                                    sc.getFQN(), p.getComparisonType().name(),
+                                    Optional.of(p.getValueFeature().getContantValue())
+                            )
                     );
                 });
             }

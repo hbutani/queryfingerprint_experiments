@@ -97,7 +97,7 @@ object QueryFingerprint {
 
     import scala.jdk.CollectionConverters._
 
-    case class PredIndex(functionName: Option[String], column: String, operator: String)
+    case class PredIndex(functionName: Option[String], column: String, operator: String, constantValue : Option[String])
 
     case class FuncAppIndex(functionName: String, column: String)
 
@@ -123,10 +123,10 @@ object QueryFingerprint {
                        )
 
     def fromPred(p: Predicate): PredIndex =
-      PredIndex(Utils.asScala(p.getFunctionName), p.getColumn, p.getOperator)
+      PredIndex(Utils.asScala(p.getFunctionName), p.getColumn, p.getOperator, Utils.asScala(p.getConstantValue))
 
     def toPred(pI: PredIndex): Predicate =
-      new Predicate(asJava(pI.functionName), pI.column, pI.operator)
+      new Predicate(asJava(pI.functionName), pI.column, pI.operator, asJava(pI.constantValue))
 
     def fromFA(fA: FunctionApplication): FuncAppIndex =
       FuncAppIndex(fA.getFunctionName, fA.getColumn)
