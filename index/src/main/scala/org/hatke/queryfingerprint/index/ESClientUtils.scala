@@ -11,13 +11,14 @@ import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
 import org.apache.http.impl.client.BasicCredentialsProvider
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder
 import org.elasticsearch.client.RestClient
+import org.hatke.Logging
 
 import java.io.{ByteArrayInputStream, FileInputStream}
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import javax.net.ssl.{SSLContext, TrustManagerFactory}
 
-object ESClientUtils extends App {
+object ESClientUtils extends App with Logging {
 
   def fileBytes(path: String): Array[Byte] = {
     scala.util.Using(new FileInputStream(path)) { fIS => fIS.readAllBytes() }.get
@@ -39,7 +40,7 @@ object ESClientUtils extends App {
       throw new RuntimeException(e)
   }
 
-  def setupHttpClient(host: String = "localhost",
+  def setupHttpClient(_host: String = "localhost",
                       port: Int = 9200,
                       userName: String = "elastic",
                       _password: String = "s3cret",
@@ -50,7 +51,7 @@ object ESClientUtils extends App {
     val scheme = Option(System.getenv("QFP_ES_HTTP_SCHEME")).getOrElse("http")
     val password = Option(System.getenv("QFP_ES_PASSWORD")).getOrElse(_password)
 
-    val host = new HttpHost("localhost", port, scheme)
+    val host = new HttpHost(_host, port, scheme)
     val credentialsProvider = new BasicCredentialsProvider
     credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(userName, password))
     val builder = RestClient.builder(host)
@@ -67,6 +68,7 @@ object ESClientUtils extends App {
     mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
     mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL)
     val restClient = builder.build
+    log.info(s"Elastic Client created: ${_host}:${port}; scheme=${scheme}")
 
     ElasticClient(JavaClient.fromRestClient(restClient))
 
