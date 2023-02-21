@@ -1,13 +1,19 @@
 package org.hatke.queryfingerprint.index.fulltext
 
 import gudusoft.gsqlparser.EDbVendor
+import org.hatke.QFPConfig
+import org.hatke.queryfingerprint.QFPEnv
 import org.hatke.queryfingerprint.index._
 import org.hatke.queryfingerprint.model.{Queryfingerprint, TpcdsUtils}
 import org.hatke.queryfingerprint.snowflake.parse.{QueryAnalysis, QueryfingerprintBuilder}
 
 object FingerprintExample extends App {
   private val indexName = "fingerprint_ex"
-  lazy val client = ESClientUtils.setupHttpClient()
+
+  lazy val qfpConfig = new QFPConfig()
+  implicit lazy val qfpEnv: QFPEnv = QFPEnv(qfpConfig)
+  lazy val client = ESClientUtils.setupHttpClient
+
   private val sqlEnv = new TPCDSSQLEnv(EDbVendor.dbvsnowflake)
 
 //  createTpcdsFingerprintIndex()

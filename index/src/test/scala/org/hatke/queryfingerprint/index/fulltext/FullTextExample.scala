@@ -4,13 +4,18 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.sksamuel.elastic4s.requests.indexes.IndexResponse
 import com.sksamuel.elastic4s.requests.mappings.MappingDefinition
 import com.sksamuel.elastic4s.requests.searches.SearchResponse
+import org.hatke.QFPConfig
+import org.hatke.queryfingerprint.QFPEnv
 import org.hatke.queryfingerprint.index.{ESClientUtils, ESUtils}
 import org.hatke.queryfingerprint.model.TpcdsUtils
 
 object FullTextExample extends App {
 
   private val indexName = "queries"
-  lazy val client = ESClientUtils.setupHttpClient()
+
+  lazy val qfpConfig = new QFPConfig()
+  implicit lazy val qfpEnv: QFPEnv = QFPEnv(qfpConfig)
+  lazy val client = ESClientUtils.setupHttpClient
 
   createTpcdsQueryIndex()
   private val response: SearchResponse = searchQuery(TpcdsUtils.readTpcdsQuery(s"query10"))

@@ -3,19 +3,24 @@ package org.hatke.queryfingerprint.index
 import com.sksamuel.elastic4s.ElasticDsl
 import com.sksamuel.elastic4s.requests.indexes.{CreateIndexResponse, IndexMappings, IndexResponse}
 import gudusoft.gsqlparser.EDbVendor
+import org.hatke.QFPConfig
 import org.hatke.queryfingerprint.index.fulltext.TPCDSSQLEnv
 import org.hatke.queryfingerprint.index.{QueryFingerprint => QFPIndex}
 import org.hatke.queryfingerprint.model.{TpcdsUtils, Queryfingerprint => QFP}
 import org.hatke.queryfingerprint.search.FirstSearchDesign
 import org.hatke.queryfingerprint.snowflake.parse.{QueryAnalysis, QueryfingerprintBuilder}
-import org.hatke.queryfingerprint.{search => srch}
+import org.hatke.queryfingerprint.{QFPEnv, search => srch}
 
 
 object QueryFingerprintSample extends App {
 
   import QueryFingerprint._
 
-  lazy val client = ESClientUtils.setupHttpClient()
+  lazy val qfpConfig = new QFPConfig()
+
+  implicit lazy val qfpEnv : QFPEnv = QFPEnv(qfpConfig)
+
+  lazy val client = ESClientUtils.setupHttpClient
 
   def deleteIndex() = {
     import ElasticDsl._

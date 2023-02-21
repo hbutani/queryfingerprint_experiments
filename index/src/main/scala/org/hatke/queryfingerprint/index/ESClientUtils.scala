@@ -3,22 +3,21 @@ package org.hatke.queryfingerprint.index
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.{ObjectMapper, PropertyNamingStrategies}
 import com.sksamuel.elastic4s.http.JavaClient
-import com.sksamuel.elastic4s.requests.cluster.NodeUsageResponse
-import com.sksamuel.elastic4s.requests.searches.SearchResponse
-import com.sksamuel.elastic4s.{ElasticClient, RequestFailure, RequestSuccess, Response}
+import com.sksamuel.elastic4s.{ElasticClient}
 import org.apache.http.HttpHost
 import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
 import org.apache.http.impl.client.BasicCredentialsProvider
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder
 import org.elasticsearch.client.RestClient
 import org.hatke.Logging
+import org.hatke.queryfingerprint.QFPEnv
 
 import java.io.{ByteArrayInputStream, FileInputStream}
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
 import javax.net.ssl.{SSLContext, TrustManagerFactory}
 
-object ESClientUtils extends App with Logging {
+object ESClientUtils extends Logging {
 
   def fileBytes(path: String): Array[Byte] = {
     scala.util.Using(new FileInputStream(path)) { fIS => fIS.readAllBytes() }.get
@@ -40,16 +39,18 @@ object ESClientUtils extends App with Logging {
       throw new RuntimeException(e)
   }
 
-  def setupHttpClient(_host: String = "localhost",
-                      port: Int = 9200,
-                      userName: String = "elastic",
-                      _password: String = "s3cret",
-                      certFile: String = System.getProperty("user.home") + "/learn/elastic_search/es_testcontainer_http_ca.crt"
+  def setupHttpClient(implicit qfpEnv : QFPEnv) = {
+    val cfg = qfpEnv.esconnConfig
+    _setupHttpClient(cfg.host, cfg.port, cfg.scheme, cfg.userName, cfg.password, cfg.certFile)
+  }
 
-                     ) = {
-
-    val scheme = Option(System.getenv("QFP_ES_HTTP_SCHEME")).getOrElse("http")
-    val password = Option(System.getenv("QFP_ES_PASSWORD")).getOrElse(_password)
+  private def _setupHttpClient(_host: String,
+                                      port: Int,
+                                      scheme: String,
+                                      userName: String,
+                                      password: String,
+                                      certFile: String
+                                     ) = {
 
     val host = new HttpHost(_host, port, scheme)
     val credentialsProvider = new BasicCredentialsProvider
@@ -57,8 +58,8 @@ object ESClientUtils extends App with Logging {
     val builder = RestClient.builder(host)
 
     builder.setHttpClientConfigCallback((clientBuilder: HttpAsyncClientBuilder) => {
-      clientBuilder.setSSLContext(createSslContextFromCa(fileBytes(certFile)))
       if (scheme == "https") {
+        clientBuilder.setSSLContext(createSslContextFromCa(fileBytes(certFile)))
         clientBuilder.setDefaultCredentialsProvider(credentialsProvider)
       }
       clientBuilder
@@ -72,38 +73,6 @@ object ESClientUtils extends App with Logging {
 
     ElasticClient(JavaClient.fromRestClient(restClient))
 
-  }
-
-  import com.sksamuel.elastic4s.ElasticDsl._
-
-  val client = setupHttpClient()
-
-  try {
-    val resp = client.execute {
-      search("artists").query("lowry")
-    }.await
-
-    // resp is a Response[+U] ADT consisting of either a RequestFailure containing the
-    // Elasticsearch error details, or a RequestSuccess[U] that depends on the type of request.
-    // In this case it is a RequestSuccess[SearchResponse]
-
-    println("---- Search Results ----")
-    resp match {
-      case failure: RequestFailure => println("We failed " + failure.error)
-      case results: RequestSuccess[SearchResponse] => println(results.result.hits.hits.toList)
-    }
-
-    resp foreach (search => println(s"There were ${search.totalHits} total hits"))
-
-    val nodeResp: Response[NodeUsageResponse] = client.execute {
-      nodeUsage()
-    }.await
-
-    println(s"Node Usage: ${nodeResp.result.toString}")
-
-
-  } finally {
-    client.close()
   }
 
 }
