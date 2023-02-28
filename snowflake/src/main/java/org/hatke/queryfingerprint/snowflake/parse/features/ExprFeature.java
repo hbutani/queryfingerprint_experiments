@@ -237,9 +237,9 @@ public interface ExprFeature {
             if (colRef.isPresent()) {
                 return of(expr, colRef.get());
             } else {
-                LOGGER.info(
-                        String.format("Failed to resolve column %1$s in QB %2$d", objectName, qb.getId())
-                );
+//                LOGGER.info(
+//                        String.format("Failed to resolve column %1$s in QB %2$d", objectName, qb.getId())
+//                );
             }
         }
         return null;
