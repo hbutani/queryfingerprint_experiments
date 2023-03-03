@@ -113,4 +113,15 @@ object QFPConfig {
       default
     }
   }
+
+  def getList(config: Config, path: String): List[String] = {
+
+    import scala.jdk.CollectionConverters._
+
+    if (config.hasPath(path)) {
+      config.getStringList(path).asScala.toList
+    } else {
+      List.empty
+    }
+  }
 }
