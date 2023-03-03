@@ -94,6 +94,8 @@ public class Queryfingerprint implements Serializable {
      */
     private final ImmutableSet<UUID> referencedQBlocks;
 
+    private final Optional<QFPExplanation> explanation;
+
 
     public Queryfingerprint(String sqlText, boolean isCTE,
                             QBType type, ImmutableSet<String> tablesReferenced,
@@ -126,6 +128,7 @@ public class Queryfingerprint implements Serializable {
         this.orderedColumns = columnsOrderBy;
         this.hash = createUniqueHash();
         this.parentQB = Optional.empty();
+        this.explanation = Optional.empty();
     }
 
     public Queryfingerprint(String sqlText, boolean isCTE,
@@ -142,7 +145,8 @@ public class Queryfingerprint implements Serializable {
                             ImmutableSet<String> columnsGroupBy,
                             ImmutableSet<String> columnsOrderBy,
                             UUID hash,
-                            Optional<UUID> parentQB
+                            Optional<UUID> parentQB,
+                            Optional<QFPExplanation> explanation
     ) {
         this.sqlText = sqlText;
         this.type = type;
@@ -161,6 +165,7 @@ public class Queryfingerprint implements Serializable {
         this.orderedColumns = columnsOrderBy;
         this.hash = hash;
         this.parentQB = parentQB;
+        this.explanation = explanation;
     }
 
     private UUID createUniqueHash() {
@@ -262,6 +267,10 @@ public class Queryfingerprint implements Serializable {
                 groupedColumns.size(),
                 functionApplications.stream().map(f -> f.isAggregate()).collect(Collectors.toList()).size()
         };
+    }
+
+    public Optional<QFPExplanation> getExplanation() {
+        return explanation;
     }
 
     @Override

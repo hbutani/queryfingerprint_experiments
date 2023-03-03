@@ -2,9 +2,10 @@ package org.hatke.queryfingerprint.queryhistory
 
 import com.google.common.collect.ImmutableSet
 import com.sksamuel.elastic4s.requests.mappings.MappingDefinition
+import com.sksamuel.elastic4s.requests.searches.SearchHit
 import com.sksamuel.elastic4s.{Hit, HitReader, Indexable}
 import org.hatke.queryfingerprint.json.JsonUtils
-import org.hatke.queryfingerprint.model.{FunctionApplication, Join, JoinType, Predicate, QBType, Queryfingerprint => QFP}
+import org.hatke.queryfingerprint.model.{FunctionApplication, Join, JoinType, Predicate, QBType, QFPExplanation, Queryfingerprint => QFP}
 import org.hatke.queryfingerprint.queryhistory.IndexableElem.{FuncAppIdxElem, JoinIdxElem, PredicateIdxElem}
 import org.hatke.queryfingerprint.queryhistory.Utils.{asJava, asScala}
 import org.json4s.jackson.Serialization
@@ -47,7 +48,15 @@ object QueryFingerprint {
     override def read(hit: Hit): Try[QFP] = {
       Try {
         val qfpI = JsonUtils.fromJson[QFPJsonConvert.QFPIndex](hit.sourceField(SOURCE_FIELD).asInstanceOf[String])
-        QFPJsonConvert.toQFP(qfpI)
+        var explanation : Option[QFPExplanation] = None
+
+        hit match {
+          case h : SearchHit =>
+            explanation = h.explanation.map(ElasticSearchExplanation)
+          case _ => ()
+        }
+
+        QFPJsonConvert.toQFP(qfpI, explanation)
       }
     }
   }
@@ -161,7 +170,7 @@ object QueryFingerprint {
         asScala(qfp.getParentQB)
       )
 
-    def toQFP(qfI: QFPIndex): QFP =
+    def toQFP(qfI: QFPIndex, explanation: Option[QFPExplanation]): QFP =
       new QFP(
         qfI.sqlText,
         qfI.isCTE,
@@ -179,7 +188,8 @@ object QueryFingerprint {
         ImmutableSet.copyOf(qfI.columnsGroupBy.asJava),
         ImmutableSet.copyOf(qfI.columnsOrderBy.asJava),
         qfI.hash,
-        asJava(qfI.parentQB)
+        asJava(qfI.parentQB),
+        asJava(explanation)
       )
 
     val INDEXINFO_CLASSES = List(

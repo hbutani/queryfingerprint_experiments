@@ -6,11 +6,10 @@ import gudusoft.gsqlparser.EDbVendor
 import org.hatke.QFPConfig
 import org.hatke.queryfingerprint.index.fulltext.TPCDSSQLEnv
 import org.hatke.queryfingerprint.model.{TpcdsUtils, Queryfingerprint => QFP}
-import org.hatke.queryfingerprint.queryhistory.{ESClientUtils, QueryFingerprint => QFPIndex}
+import org.hatke.queryfingerprint.queryhistory.{ESClientUtils, Utils, QueryFingerprint => QFPIndex, search => srch}
 import org.hatke.queryfingerprint.snowflake.parse.{QueryAnalysis, QueryfingerprintBuilder}
 import org.hatke.queryfingerprint.QFPEnv
 import org.hatke.queryfingerprint.queryhistory.search.FirstSearchDesign
-import org.hatke.queryfingerprint.queryhistory.{search => srch}
 
 
 object QueryFingerprintSample extends App {
@@ -125,9 +124,11 @@ object QueryFingerprintSample extends App {
       reverseMap.getOrElse(qfp.getHash.toString, "<not recorded subquery>")
     }
 
-    def printResult(rQFPs : Seq[QFP]) : Unit = {
+    def printResult(rQFPs : Seq[QFP], showExplanation : Boolean = false) : Unit = {
       for(qfp <- rQFPs) {
-        println(s"${getQryNm(qfp)}")
+        val explanation = Utils.asScala(qfp.getExplanation).filter(_ => showExplanation).
+          map( e => s"\nExplanation ${e.show}").getOrElse("")
+        println(s"""${getQryNm(qfp)}${explanation}""")
       }
     }
 
@@ -144,7 +145,7 @@ object QueryFingerprintSample extends App {
     printResult(rQFPs10)
 
     println("SEARCH Query 3:")
-    printResult(rQFPs3)
+    printResult(rQFPs3, true)
 
   } finally {
     close()
