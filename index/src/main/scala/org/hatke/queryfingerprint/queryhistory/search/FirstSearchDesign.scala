@@ -1,9 +1,10 @@
-package org.hatke.queryfingerprint.search
+package org.hatke.queryfingerprint.queryhistory.search
+
 import com.sksamuel.elastic4s.handlers.searches.queries.QueryBuilderFn
 import com.sksamuel.elastic4s.requests.searches.queries.{Query, RawQuery}
 import com.sksamuel.elastic4s.requests.searches.queries.compound.BoolQuery
 import com.sksamuel.elastic4s.requests.searches.term.TermQuery
-import org.hatke.queryfingerprint.index.IndexableElem.{FuncAppIdxElem, JoinIdxElem, PredicateIdxElem}
+import org.hatke.queryfingerprint.queryhistory.IndexableElem.{FuncAppIdxElem, JoinIdxElem, PredicateIdxElem}
 import org.hatke.queryfingerprint.model.{Queryfingerprint => QFP}
 import org.hatke.queryfingerprint.json.JsonUtils
 

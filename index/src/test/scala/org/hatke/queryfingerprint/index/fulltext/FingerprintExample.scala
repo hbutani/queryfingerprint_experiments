@@ -5,6 +5,7 @@ import org.hatke.QFPConfig
 import org.hatke.queryfingerprint.QFPEnv
 import org.hatke.queryfingerprint.index._
 import org.hatke.queryfingerprint.model.{Queryfingerprint, TpcdsUtils}
+import org.hatke.queryfingerprint.queryhistory.ESClientUtils
 import org.hatke.queryfingerprint.snowflake.parse.{QueryAnalysis, QueryfingerprintBuilder}
 
 object FingerprintExample extends App {

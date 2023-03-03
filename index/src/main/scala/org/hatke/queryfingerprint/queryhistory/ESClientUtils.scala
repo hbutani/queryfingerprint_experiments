@@ -1,9 +1,9 @@
-package org.hatke.queryfingerprint.index
+package org.hatke.queryfingerprint.queryhistory
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.{ObjectMapper, PropertyNamingStrategies}
+import com.sksamuel.elastic4s.ElasticClient
 import com.sksamuel.elastic4s.http.JavaClient
-import com.sksamuel.elastic4s.{ElasticClient}
 import org.apache.http.HttpHost
 import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
 import org.apache.http.impl.client.BasicCredentialsProvider

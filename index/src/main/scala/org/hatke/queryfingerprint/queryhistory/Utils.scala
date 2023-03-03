@@ -1,4 +1,4 @@
-package org.hatke.queryfingerprint.index
+package org.hatke.queryfingerprint.queryhistory
 
 import java.util.Optional
 

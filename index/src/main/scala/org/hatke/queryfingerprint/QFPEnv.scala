@@ -1,7 +1,7 @@
 package org.hatke.queryfingerprint
 
 import org.hatke.QFPConfig
-import org.hatke.queryfingerprint.index.ESConfig
+import org.hatke.queryfingerprint.queryhistory.ESConfig
 import org.hatke.serializer.{createKryoSerializer, KryoConf, KryoSerializer}
 
 case class QFPEnv private (config : QFPConfig) {

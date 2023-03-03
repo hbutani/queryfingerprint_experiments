@@ -1,4 +1,4 @@
-package org.hatke.queryfingerprint.index
+package org.hatke.queryfingerprint.queryhistory
 
 import com.sksamuel.elastic4s.requests.searches.queries.Query
 import com.sksamuel.elastic4s.requests.searches.queries.compound.BoolQuery

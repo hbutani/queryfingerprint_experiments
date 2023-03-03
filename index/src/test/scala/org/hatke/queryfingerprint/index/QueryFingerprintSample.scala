@@ -5,16 +5,17 @@ import com.sksamuel.elastic4s.requests.indexes.{CreateIndexResponse, IndexMappin
 import gudusoft.gsqlparser.EDbVendor
 import org.hatke.QFPConfig
 import org.hatke.queryfingerprint.index.fulltext.TPCDSSQLEnv
-import org.hatke.queryfingerprint.index.{QueryFingerprint => QFPIndex}
 import org.hatke.queryfingerprint.model.{TpcdsUtils, Queryfingerprint => QFP}
-import org.hatke.queryfingerprint.search.FirstSearchDesign
+import org.hatke.queryfingerprint.queryhistory.{ESClientUtils, QueryFingerprint => QFPIndex}
 import org.hatke.queryfingerprint.snowflake.parse.{QueryAnalysis, QueryfingerprintBuilder}
-import org.hatke.queryfingerprint.{QFPEnv, search => srch}
+import org.hatke.queryfingerprint.QFPEnv
+import org.hatke.queryfingerprint.queryhistory.search.FirstSearchDesign
+import org.hatke.queryfingerprint.queryhistory.{search => srch}
 
 
 object QueryFingerprintSample extends App {
 
-  import QueryFingerprint._
+  import QFPIndex._
 
   lazy val qfpConfig = new QFPConfig()
 

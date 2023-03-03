@@ -6,8 +6,9 @@ import com.sksamuel.elastic4s.requests.mappings.MappingDefinition
 import com.sksamuel.elastic4s.requests.searches.SearchResponse
 import org.hatke.QFPConfig
 import org.hatke.queryfingerprint.QFPEnv
-import org.hatke.queryfingerprint.index.{ESClientUtils, ESUtils}
+import org.hatke.queryfingerprint.index.ESUtils
 import org.hatke.queryfingerprint.model.TpcdsUtils
+import org.hatke.queryfingerprint.queryhistory.ESClientUtils
 
 object FullTextExample extends App {
 

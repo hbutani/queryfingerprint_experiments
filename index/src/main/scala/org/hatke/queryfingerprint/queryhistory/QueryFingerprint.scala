@@ -1,12 +1,12 @@
-package org.hatke.queryfingerprint.index
+package org.hatke.queryfingerprint.queryhistory
 
 import com.google.common.collect.ImmutableSet
 import com.sksamuel.elastic4s.requests.mappings.MappingDefinition
 import com.sksamuel.elastic4s.{Hit, HitReader, Indexable}
-import org.hatke.queryfingerprint.index.IndexableElem.{FuncAppIdxElem, JoinIdxElem, PredicateIdxElem}
-import org.hatke.queryfingerprint.index.Utils.{asJava, asScala}
 import org.hatke.queryfingerprint.json.JsonUtils
 import org.hatke.queryfingerprint.model.{FunctionApplication, Join, JoinType, Predicate, QBType, Queryfingerprint => QFP}
+import org.hatke.queryfingerprint.queryhistory.IndexableElem.{FuncAppIdxElem, JoinIdxElem, PredicateIdxElem}
+import org.hatke.queryfingerprint.queryhistory.Utils.{asJava, asScala}
 import org.json4s.jackson.Serialization
 import org.json4s.{CustomSerializer, Formats, JString, ShortTypeHints}
 

@@ -1,4 +1,4 @@
-package org.hatke.queryfingerprint.search
+package org.hatke.queryfingerprint.queryhistory.search
 
 import com.sksamuel.elastic4s.requests.searches.queries.Query
 import org.hatke.queryfingerprint.model.{Queryfingerprint => QFP}
