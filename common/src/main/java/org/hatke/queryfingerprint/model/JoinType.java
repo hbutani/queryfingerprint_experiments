@@ -7,7 +7,10 @@ public enum JoinType {
     leftOuter(true),
     rightOuter(true, leftOuter),
     fullOuter(true),
-    cross(true);
+    left(true),
+    right(true),
+    cross(true),
+    join(false);
 
     private final boolean isFlippable;
     private final JoinType flipType;

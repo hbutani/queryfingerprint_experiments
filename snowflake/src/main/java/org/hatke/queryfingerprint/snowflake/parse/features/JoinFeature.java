@@ -11,7 +11,7 @@ public class JoinFeature extends BaseFeature{
 
     private final JoinType joinType;
 
-    JoinFeature(TExpression expr,
+    public JoinFeature(TExpression expr,
                        ExprFeature leftFeature, ExprFeature rightFeature, JoinType joinType) {
         super(expr, ExprKind.join);
         this.leftFeature = leftFeature;

@@ -7,10 +7,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import gudusoft.gsqlparser.EExpressionType;
+import gudusoft.gsqlparser.EJoinType;
 import gudusoft.gsqlparser.nodes.*;
 import gudusoft.gsqlparser.sqlenv.ESQLDataObjectType;
 import gudusoft.gsqlparser.sqlenv.TSQLEnv;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
+import org.hatke.queryfingerprint.model.JoinType;
 import org.hatke.queryfingerprint.model.QBType;
 import org.hatke.queryfingerprint.snowflake.parse.features.CorrelateJoinFeature;
 import org.hatke.queryfingerprint.snowflake.parse.features.ExprFeature;
@@ -114,11 +116,22 @@ public class SingleQB implements QB {
     private void build() {
         buildCTEs();
         buildSources();
-        // TODO analyzeSourceJoins();
+        analyzeSourceJoins();
         analyzeWhereClause();
         analyzeGroupByClause();
         analyzeOrderByClause();
         analyzeResultClause();
+    }
+
+    private void analyzeSourceJoins() {
+        TJoinList joins = selectStat.getJoins();
+        joins.forEach(j -> {
+            TJoinItemList joinItems = j.getJoinItems();
+            joinItems.forEach(ji -> {
+                TExpression onCondition = ji.getOnCondition();
+                extractWhereOrOnclause(onCondition, Optional.of(JoinType.valueOf(ji.getJoinType().name())));
+            });
+        });
     }
 
     private void buildCTEs() {
@@ -259,8 +272,12 @@ public class SingleQB implements QB {
         c.accept(blockFeatures);
     }
 
+    private void addExprFeature(ExprFeature eInfo, boolean isWhereConjunct) {
+        addExprFeature(eInfo, isWhereConjunct, Optional.empty());
+    }
+
     private void addExprFeature(ExprFeature eInfo,
-                                boolean isWhereConjunct) {
+                                boolean isWhereConjunct, Optional<JoinType> joinType) {
         eInfo.getColumnRefs().stream().forEach(crf -> {
                     if (!crf.isCorrelated()) {
                         blockFeatures.accesedColumns.add(crf.getColumn());
@@ -283,7 +300,11 @@ public class SingleQB implements QB {
         });
 
         if (eInfo.getExprKind() == ExprKind.join) {
-            blockFeatures.joins.add((JoinFeature) eInfo);
+            JoinFeature jf = (JoinFeature) eInfo;
+            if (joinType.isPresent()) {
+                jf = new JoinFeature(jf.getTExpression(), jf.getLeftFeature(), jf.getRightFeature(), joinType.get());
+            }
+            blockFeatures.joins.add(jf);
         }
 
         if (eInfo.getExprKind() == ExprKind.correlate_join) {
@@ -325,6 +346,13 @@ public class SingleQB implements QB {
         }
 
         TExpression whereCond = selectStat.getWhereClause().getCondition();
+        extractWhereOrOnclause(whereCond, Optional.empty());
+
+    }
+
+    private void extractWhereOrOnclause(TExpression whereCond, Optional<JoinType> joinType) {
+        if (whereCond == null) return;
+
         buildSubqueriesInWhere(whereCond);
 
         ArrayList conjuncts = null;
@@ -346,12 +374,11 @@ public class SingleQB implements QB {
             Pair<ExprKind, ImmutableList<ExprFeature>> exprInfos =
                     eA.analyze();
             if (exprInfos.left != ExprKind.composite) {
-                addExprFeature(exprInfos.right.get(0), true);
+                addExprFeature(exprInfos.right.get(0), true, joinType);
             } else {
-                exprInfos.right.forEach(eI -> addExprFeature(eI, false));
+                exprInfos.right.forEach(eI -> addExprFeature(eI, false, joinType));
             }
         }
-
     }
 
     private void analyzeGroupByExpr(TExpression gByExpr) {
@@ -363,14 +390,14 @@ public class SingleQB implements QB {
     }
 
     private void analyzeGroupByClause() {
-        if(selectStat.getGroupByClause() != null) {
+        if (selectStat.getGroupByClause() != null) {
             TGroupByItemList items = selectStat.getGroupByClause().getItems();
             for (int i = 0; i < items.size(); i++) {
                 TGroupByItem item = items.getGroupByItem(i);
 
                 if (item.getRollupCube() != null) {
                     TExpressionList eList = item.getRollupCube().getItems();
-                    for( TExpression expr : eList) {
+                    for (TExpression expr : eList) {
                         analyzeGroupByExpr(expr);
                     }
                 } else {
@@ -385,7 +412,7 @@ public class SingleQB implements QB {
     }
 
     private void analyzeOrderByClause() {
-        if(selectStat.getOrderbyClause() != null) {
+        if (selectStat.getOrderbyClause() != null) {
             TOrderByItemList items = selectStat.getOrderbyClause().getItems();
             for (int i = 0; i < items.size(); i++) {
                 TOrderByItem item = items.getOrderByItem(i);
