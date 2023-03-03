@@ -4,16 +4,20 @@ public enum JoinType {
 
     inner(true),
     semi(false),
-    leftOuter(true),
-    rightOuter(true, leftOuter),
-    fullOuter(true),
+    leftouter(true),
+    rightouter(true, leftouter),
+    fullouter(true),
     left(true),
     right(true),
     cross(true),
     join(false);
 
+    static {
+        leftouter.flipType = rightouter;
+    }
+
     private final boolean isFlippable;
-    private final JoinType flipType;
+    private JoinType flipType;
 
     JoinType(boolean isFlippable, JoinType flipType) {
         this.isFlippable = isFlippable;
