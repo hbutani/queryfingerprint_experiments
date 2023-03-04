@@ -70,6 +70,10 @@ class CatalogTable implements Source {
         return fqName;
     }
 
+    public Optional<String> getFQN() {
+        return Optional.of(getFqName());
+    }
+
     public TSQLEnv getSqlEnv() {
         return tableNode.getSqlEnv();
     }

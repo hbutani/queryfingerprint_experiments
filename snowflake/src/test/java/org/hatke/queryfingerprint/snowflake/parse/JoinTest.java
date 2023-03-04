@@ -100,8 +100,14 @@ public class JoinTest extends TestBase {
 
         Join join = qf.getJoins().stream().findFirst().get();
         FunctionApplication fa = qf.getFunctionApplications().stream().findFirst().get();
-        assertEquals(fa.getFunctionName(), "upper");
-        assertEquals(fa.getColumn(), "TPCDS.country.NAME");
+        assertEquals(fa.getFunctionName(), "UPPER");
+
+        assertEquals(fa.getColumn(), "PERFORMANCE_REGRESSION.PUBLIC.COUNTRYCSVEXT.NAME");
+        assertEquals(join.getLeftTable(), "PERFORMANCE_REGRESSION.PUBLIC.COUNTRYCSVEXT");
+        assertEquals(join.getRightTable(), "PERFORMANCE_REGRESSION.PUBLIC.CUSTOMER_100GB_DATABRICKS_SEQ");
+        assertEquals(join.getLeftColumn(), "PERFORMANCE_REGRESSION.PUBLIC.COUNTRYCSVEXT.NAME");
+        assertEquals(join.getRightColumn(), "PERFORMANCE_REGRESSION.PUBLIC.CUSTOMER_100GB_DATABRICKS_SEQ.C_BIRTH_COUNTRY");
+        assertEquals(join.getType(), JoinType.inner);
     }
 
 
@@ -121,8 +127,8 @@ public class JoinTest extends TestBase {
 
         Join join = qf.getJoins().stream().findFirst().get();
         FunctionApplication fa = qf.getFunctionApplications().stream().findFirst().get();
-        assertEquals(fa.getFunctionName(), "upper");
-        assertEquals(fa.getColumn(), "TPCDS.country.NAME");
+        assertEquals(fa.getFunctionName(), "UPPER");
+        assertEquals(fa.getColumn(), "TPCDS.TPCDS.STORE_SALES.SS_ITEM_SK");
     }
 
     @Test

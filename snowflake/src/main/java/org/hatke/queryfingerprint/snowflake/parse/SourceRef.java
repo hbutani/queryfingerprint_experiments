@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import gudusoft.gsqlparser.nodes.TObjectName;
 import gudusoft.gsqlparser.sqlenv.TSQLEnv;
+import gudusoft.gsqlparser.util.SQLUtil;
 import org.hatke.utils.Pair;
 
 import java.util.List;
@@ -24,6 +25,16 @@ class SourceRef implements Source {
     private final ImmutableList<Column> columns;
     private final ImmutableMap<String, Column> columnMap;
 
+    private String buildFQN(Source source, String tableNm, String normalizedFQN) {
+        return
+                source.getFQN().map(fqn -> {
+                    List<String> segments = SQLUtil.parseNames(fqn);
+                    segments.set(segments.size() -1, tableNm);
+                    return segments.stream().collect(Collectors.joining("."));
+                }
+                ).orElse(normalizedFQN);
+    }
+
     public SourceRef(QueryAnalysis qA,
                      Source inSource,
                      Source source,
@@ -35,7 +46,7 @@ class SourceRef implements Source {
         if (alias != null && !alias.trim().equals("")) {
             Pair<String, String> p  = Utils.fqNormalizedTableName(source.getSqlEnv(), alias);
             this.alias = Optional.of(p.left);
-            fqAlias = Optional.of(p.right);
+            fqAlias = Optional.of(buildFQN(source, p.left, p.right));
         } else {
             this.alias = Optional.empty();
             this.fqAlias = Optional.empty();
@@ -95,6 +106,10 @@ class SourceRef implements Source {
 
     public Optional<String> getFqAlias() {
         return fqAlias;
+    }
+
+    public Optional<String> getFQN() {
+        return getFqAlias();
     }
 
     public Iterable<Column>  columns() {

@@ -12,6 +12,7 @@ import gudusoft.gsqlparser.nodes.*;
 import gudusoft.gsqlparser.sqlenv.ESQLDataObjectType;
 import gudusoft.gsqlparser.sqlenv.TSQLEnv;
 import gudusoft.gsqlparser.stmt.TSelectSqlStatement;
+import gudusoft.gsqlparser.util.SQLUtil;
 import org.hatke.queryfingerprint.model.JoinType;
 import org.hatke.queryfingerprint.model.QBType;
 import org.hatke.queryfingerprint.snowflake.parse.features.CorrelateJoinFeature;
@@ -221,14 +222,17 @@ public class SingleQB implements QB {
 
         Function<Column, Void> addCol2 = col -> {
 
-            String nm = col.getName();
-
-            sourceColumnMap.put(col.getFQN(), col);
-
-            if (sourceColumnMap.containsKey(nm)) {
-                ambiguousColNames.add(nm);
-            } else {
-                sourceColumnMap.put(nm, col);
+            List<String> segments = SQLUtil.parseNames(col.getFQN());
+            String colName = segments.get(segments.size() -1);
+            for (int i=segments.size() -1 ; i >= 0; i--) {
+                if (sourceColumnMap.containsKey(colName)) {
+                    ambiguousColNames.add(colName);
+                } else {
+                    sourceColumnMap.put(colName, col);
+                }
+                if (i > 0) {
+                    colName = segments.get(i-1) + "." + colName;
+                }
             }
 
             return null;

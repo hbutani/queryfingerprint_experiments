@@ -20,4 +20,6 @@ public interface Source {
      * @return
      */
     Optional<CatalogTable> asCatalogTable();
+
+    Optional<String> getFQN();
 }

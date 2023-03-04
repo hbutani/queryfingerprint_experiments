@@ -9,6 +9,7 @@ build
 lib/**
 
 .idea/**
+.run/**
 
 **/target
 

@@ -184,10 +184,10 @@ public class Utils {
         String defaultSchema = sqlEnv.getDefaultSchemaName();
         String defaultDB = defaultSchema == null ? null : sqlEnv.getDefaultCatalogName();
 
-        String tableDB = numElems > 3 ? segments.get(numElems - 3) : defaultDB;
+        String tableDB = numElems > 2 ? segments.get(numElems - 3) : defaultDB;
         tableDB = tableDB != null ? normalizeIdentifier(dbVendor, ESQLDataObjectType.dotCatalog, tableDB) : null;
 
-        String tableSchema = numElems > 2 ? segments.get(numElems - 2) : defaultSchema;
+        String tableSchema = numElems > 1 ? segments.get(numElems - 2) : defaultSchema;
         tableSchema = tableSchema != null ? normalizeIdentifier(dbVendor, ESQLDataObjectType.dotSchema, tableSchema) : null;
 
         String tabName = segments.get(numElems - 1);

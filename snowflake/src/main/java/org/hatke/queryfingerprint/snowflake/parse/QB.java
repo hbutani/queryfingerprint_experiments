@@ -41,6 +41,10 @@ public interface QB extends Source {
 
     void addFeature(Consumer<Features> c);
 
+    default Optional<String> getFQN() {
+        return Optional.empty();
+    }
+
     static QB create(QueryAnalysis qA, boolean isTopLevel, QBType qbType, TSelectSqlStatement pTree,
                      Optional<QB> parentQB, Optional<SQLClauseType> parentClause, boolean isCTE) {
 
