@@ -1,95 +1,31 @@
 package org.hatke.queryfingerprint.index
 
-import com.sksamuel.elastic4s.ElasticDsl
-import com.sksamuel.elastic4s.requests.indexes.{CreateIndexResponse, IndexMappings, IndexResponse}
 import gudusoft.gsqlparser.EDbVendor
 import org.hatke.QFPConfig
+import org.hatke.queryfingerprint.QFPEnv
 import org.hatke.queryfingerprint.index.fulltext.TPCDSSQLEnv
 import org.hatke.queryfingerprint.model.{TpcdsUtils, Queryfingerprint => QFP}
-import org.hatke.queryfingerprint.queryhistory.{ESClientUtils, Utils, QueryFingerprint => QFPIndex, search => srch}
+import org.hatke.queryfingerprint.queryhistory.{QueryHistoryIndex, Utils}
 import org.hatke.queryfingerprint.snowflake.parse.{QueryAnalysis, QueryfingerprintBuilder}
-import org.hatke.queryfingerprint.QFPEnv
-import org.hatke.queryfingerprint.queryhistory.search.FirstSearchDesign
 
 
 object QueryFingerprintSample extends App {
-
-  import QFPIndex._
 
   lazy val qfpConfig = new QFPConfig()
 
   implicit lazy val qfpEnv : QFPEnv = QFPEnv(qfpConfig)
 
-  lazy val client = ESClientUtils.setupHttpClient
 
-  def deleteIndex() = {
-    import ElasticDsl._
-
-    try {
-      client.execute {
-        ElasticDsl.deleteIndex("query_fingerprint")
-      }.await.result
-    } catch {
-      case _: Throwable => ()
-    }
-  }
-
-  def createIndex(): CreateIndexResponse = {
-    import ElasticDsl._
-
-    client.execute {
-      val req = ElasticDsl.createIndex("query_fingerprint").
-        shards(1).
-        replicas(1).
-        mapping(QFPIndex.elasticMapping).
-        singleShard().
-        singleReplica()
-      req
-    }.await.result
-  }
-
-  def indexQFP2(qfp: QFP): IndexResponse = {
-    import com.sksamuel.elastic4s.ElasticDsl._
-
-    client.execute {
-      indexInto("query_fingerprint").doc(qfp).refreshImmediately
-    }.await.result
-
-  }
-
-  def showMapping(): Seq[IndexMappings] = {
-    import com.sksamuel.elastic4s.ElasticDsl._
-
-    client.execute {
-      ElasticDsl.getMapping("query_fingerprint")
-    }.await.result
-  }
-
-  def searchAll: IndexedSeq[QFP] = {
-    import com.sksamuel.elastic4s.ElasticDsl._
-
-    val r = client.execute {
-      search("query_fingerprint").matchAllQuery()
-    }.await.result
-
-    r.to[QFP]
-
-  }
-
-  def searchQFP(searchQFP: QFP, explain: Boolean): IndexedSeq[QFP] = {
-    srch.search(searchQFP, new FirstSearchDesign, explain)(client)
-  }
-
-  def close(): Unit = {
-    client.close()
-  }
+  lazy val qhIndex = new QueryHistoryIndex(qfpEnv)
 
   private val sqlEnv = new TPCDSSQLEnv(EDbVendor.dbvsnowflake)
 
+  println(s"Elastic Cluster Usage:\n ${qhIndex.nodeUsage()}")
+
   try {
 
-    deleteIndex()
-    createIndex()
+    qhIndex.deleteIndex()
+    qhIndex.createIndex()
 
     val reverseMap = scala.collection.mutable.Map[String, String]()
 
@@ -102,7 +38,7 @@ object QueryFingerprintSample extends App {
       val qfpB = new QueryfingerprintBuilder(qa)
       val fps = qfpB.build
 
-      fps.forEach(indexQFP2)
+      fps.forEach(qhIndex.index)
 
       import scala.jdk.CollectionConverters._
       for(fp <- fps.asScala) {
@@ -132,11 +68,11 @@ object QueryFingerprintSample extends App {
       }
     }
 
-    println(showMapping().mkString("\n"))
+    println(qhIndex.showMapping().mkString("\n"))
 
-    val rQFPs1 = searchQFP(fpMap("query1"), true)
-    val rQFPs10 = searchQFP(fpMap("query10"), true)
-    val rQFPs3 = searchQFP(fpMap("query3"), true)
+    val rQFPs1 = qhIndex.search(fpMap("query1"), true)
+    val rQFPs10 = qhIndex.search(fpMap("query10"), true)
+    val rQFPs3 = qhIndex.search(fpMap("query3"), true)
 
     println("SEARCH Query 1:")
     printResult(rQFPs1)
@@ -147,7 +83,8 @@ object QueryFingerprintSample extends App {
     println("SEARCH Query 3:")
     printResult(rQFPs3, true)
 
+
   } finally {
-    close()
+    qhIndex.close()
   }
 }

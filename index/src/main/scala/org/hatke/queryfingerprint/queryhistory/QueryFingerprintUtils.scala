@@ -14,7 +14,7 @@ import org.json4s.{CustomSerializer, Formats, JString, ShortTypeHints}
 import java.util.UUID
 import scala.util.Try
 
-object QueryFingerprint {
+object QueryFingerprintUtils {
 
   private val SOURCE_FIELD = "qfp_source"
   private val FEATURE_VECTOR_DIM = 5

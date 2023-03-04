@@ -19,11 +19,11 @@ import javax.net.ssl.{SSLContext, TrustManagerFactory}
 
 object ESClientUtils extends Logging {
 
-  def fileBytes(path: String): Array[Byte] = {
+  private def fileBytes(path: String): Array[Byte] = {
     scala.util.Using(new FileInputStream(path)) { fIS => fIS.readAllBytes() }.get
   }
 
-  def createSslContextFromCa(certificateBytes: Array[Byte]): SSLContext = try {
+  private def createSslContextFromCa(certificateBytes: Array[Byte]): SSLContext = try {
     val factory = CertificateFactory.getInstance("X.509")
     val trustedCa = factory.generateCertificate(new ByteArrayInputStream(certificateBytes))
     val trustStore = KeyStore.getInstance("pkcs12")
@@ -40,17 +40,20 @@ object ESClientUtils extends Logging {
   }
 
   def setupHttpClient(implicit qfpEnv : QFPEnv) = {
-    val cfg = qfpEnv.esconnConfig
+    _setupHttpClient(qfpEnv.qhConfig.esConfig)
+  }
+
+  private[queryhistory] def _setupHttpClient(implicit cfg: ESConfig): ElasticClient = {
     _setupHttpClient(cfg.host, cfg.port, cfg.scheme, cfg.userName, cfg.password, cfg.certFile)
   }
 
   private def _setupHttpClient(_host: String,
-                                      port: Int,
-                                      scheme: String,
-                                      userName: String,
-                                      password: String,
-                                      certFile: String
-                                     ) = {
+                               port: Int,
+                               scheme: String,
+                               userName: String,
+                               password: String,
+                               certFile: String
+                              ): ElasticClient = {
 
     val host = new HttpHost(_host, port, scheme)
     val credentialsProvider = new BasicCredentialsProvider

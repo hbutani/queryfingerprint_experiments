@@ -1,12 +1,12 @@
 package org.hatke.queryfingerprint
 
 import org.hatke.QFPConfig
-import org.hatke.queryfingerprint.queryhistory.ESConfig
-import org.hatke.serializer.{createKryoSerializer, KryoConf, KryoSerializer}
+import org.hatke.queryfingerprint.queryhistory.{QHConfig}
+import org.hatke.serializer.{KryoConf, KryoSerializer, createKryoSerializer}
 
 case class QFPEnv private (config : QFPConfig) {
 
-  lazy val esconnConfig : ESConfig = ESConfig(config)
+  lazy val qhConfig : QHConfig = QHConfig(config)
 
   lazy val kryoConf: KryoConf = KryoConf(config)
 

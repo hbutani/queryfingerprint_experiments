@@ -45,36 +45,15 @@ kyro {
  */
 class QFPConfig(envSpecific : Config = ConfigFactory.empty) {
 
-  private val ELASTIC_CONN_PATH = "elasticconn"
-  private val SEARCH_PATH = "search"
+  private val QUERY_HISTORY_PATH = "query_history"
   private val KRYO_PATH = "kyro"
 
-  val FINGERPRINT_SEARCH_PATH = "fingerprint"
-  val KEYWORD_SEARCH_PATH = "keyword"
 
   private lazy val _config = envSpecific.withFallback(ConfigFactory.load())
-  private lazy val _elasticConnConfig = {
+  private lazy val _queryHistoryConfig = {
     val c = _config
-    c.checkValid(ConfigFactory.defaultReference(), ELASTIC_CONN_PATH)
-    c.getConfig(ELASTIC_CONN_PATH)
-  }
-
-  private lazy val _searchConfig = {
-    val c = _config
-    c.checkValid(ConfigFactory.defaultReference(), SEARCH_PATH)
-    c.getConfig(SEARCH_PATH)
-  }
-
-  private lazy val _fingerprintSearchConfig = {
-    val c = searchConfig
-    c.checkValid(ConfigFactory.defaultReference(), FINGERPRINT_SEARCH_PATH)
-    c.getConfig(FINGERPRINT_SEARCH_PATH)
-  }
-
-  private lazy val _keywordSearchConfig = {
-    val c = searchConfig
-    c.checkValid(ConfigFactory.defaultReference(), KEYWORD_SEARCH_PATH)
-    c.getConfig(KEYWORD_SEARCH_PATH)
+    c.checkValid(ConfigFactory.defaultReference(), QUERY_HISTORY_PATH)
+    c.getConfig(QUERY_HISTORY_PATH)
   }
 
   private lazy val _kryoConfig = {
@@ -83,13 +62,7 @@ class QFPConfig(envSpecific : Config = ConfigFactory.empty) {
     c.getConfig(KRYO_PATH)
   }
 
-  def elasticConnConfig : Config = _elasticConnConfig
-
-  def searchConfig: Config = _searchConfig
-
-  def fingerprintSearchConfig: Config = _fingerprintSearchConfig
-
-  def keywordSearchConfig: Config = _keywordSearchConfig
+  def queryHistoryConfig : Config = _queryHistoryConfig
 
   def kryoConfig : Config = _kryoConfig
 
@@ -123,5 +96,14 @@ object QFPConfig {
     } else {
       List.empty
     }
+  }
+
+  def getRequired(config: Config, path: String): String = {
+    config.getString(path)
+  }
+
+  def getChildConfig(parent : Config, key : String) : Config = {
+    parent.checkValid(ConfigFactory.defaultReference(), key)
+    parent.getConfig(key)
   }
 }

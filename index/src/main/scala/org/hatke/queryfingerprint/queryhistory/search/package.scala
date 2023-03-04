@@ -5,7 +5,7 @@ import org.hatke.queryfingerprint.model.{Queryfingerprint => QFP}
 import com.sksamuel.elastic4s.requests.searches.term.TermQuery
 
 package object search {
-  import org.hatke.queryfingerprint.queryhistory.QueryFingerprint._
+  import org.hatke.queryfingerprint.queryhistory.QueryFingerprintUtils._
   import scala.jdk.CollectionConverters._
 
   def search(sQFP: QFP,
